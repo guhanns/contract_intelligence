@@ -1,5 +1,11 @@
+
 .contract-file-list{
     padding: 8px 20px;
+    position: fixed;
+    top: 80px;
+    bottom: 10px;
+    right: 0;
+    left: 80px;
 }
 
 .list-head{
@@ -64,9 +70,10 @@
 
 .Table-contract-list{
     color: var(--contract-list-table-color);
-width: 100%;
-border: 1px solid var(--contarct-table-border);
-margin-top: 20px;
+    width: 100%;
+    border: 1px solid var(--contarct-table-border);
+    margin-top: 20px;
+    /* border-collapse: separate; enable sticky header reliability */
 }
 
 .Table-contract-list tr{
@@ -75,6 +82,35 @@ margin-top: 20px;
 
 .Table-contract-list .table-row{
     background-color: var(--contract-table-bg-color);
+}
+
+/* Sticky header */
+.table-list-contract{
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 150px); /* viewport minus header and paddings */
+  overflow: hidden; /* contain internal scroller */
+}
+
+.table-list-contract .Table-contract-list thead th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--contract-table-bg-color);
+}
+
+/* Scrollable body */
+.table-list-contract .Table-contract-list tbody{
+  display: block;
+  max-height: calc(100vh - 220px); /* adjust as needed to fit layout */
+  overflow-y: auto;
+}
+
+.table-list-contract .Table-contract-list thead,
+.table-list-contract .Table-contract-list tbody tr{
+  display: table;
+  width: 100%;
+  table-layout: fixed; /* columns align between head and body */
 }
 
 
@@ -87,7 +123,7 @@ padding: 12px;
 color: #94969C;
 }
 .Table-contract-list .doc-box{
-width:320px;
+width:250px;
 height: 44px;
 gap: 12px;
 padding: 12px;
@@ -125,7 +161,7 @@ color: var(--contract-list-table-color);
   background-color: transparent;
 }
 .Table-contract-list .status-box{
-    width: 226px;
+    width: 150px;
 height: 44px;
 padding: 12px;
 color: var(--contract-list-table-color);

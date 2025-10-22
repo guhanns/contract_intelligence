@@ -1,8 +1,8 @@
 import axios from "axios"
 
 
-export const NodeURL = 'https://icontract-backend.srm-tech.com/'
-// export const NodeURL = 'http://127.0.0.1:8006'
+export const NodeURL = 'https://icontract-backend.ai.srm-tech.com'
+// export const NodeURL = 'http://127.0.0.1:8000'
 
 
 export const client = axios.create({

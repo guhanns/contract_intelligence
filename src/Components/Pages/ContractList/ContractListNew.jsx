@@ -23,7 +23,6 @@ import griddarkImg from "../../../images/icons/grid-dark.svg";
 import gridwhiteImg from "../../../images/icons/grid-white.svg";
 import alertImg from "../../../images/icons/alert-triangle.svg";
 import pdfwhitee from '../../../images/icons/File-white-pdf.svg';
-
 import { Accordion, AccordionBody, AccordionHeader, AccordionItem, Badge, Button, ButtonGroup, Card, CardBody, Nav, NavItem, NavLink } from "reactstrap";
 import Select from "react-select";
 import { truncate } from "lodash";
@@ -33,6 +32,12 @@ import { saveContracts } from "../../redux/features/contractSlice";
 import { data, useNavigate } from "react-router-dom";
 import ContractCard from "../../Skeleton-loading/ContractCard";
 import { useTheme } from "../../../Themecontext";
+import ContractFilter from "../../Skeleton-loading/ContractFilter"
+import ContractDetailsSkeleton from "../../Skeleton-loading/ContractDetailsSkeleton";
+import TierStructureSkeloton from "../../Skeleton-loading/TierStructureSkeloton";
+import ProductPricingDetails from "../../Skeleton-loading/ProductPricingDetails";
+import TierStructureSkeleton from "../../Skeleton-loading/TierStructureSkeloton";
+import TotalContracts from "../../Skeleton-loading/TotalContracts";
 
 
 
@@ -107,7 +112,7 @@ const accordionData = [
   },
   ];
 
-const colourStyles = {
+export const colourStyles = {
   container: (styles) => ({
     ...styles,
     width: "95%",
@@ -242,8 +247,9 @@ function ContractListNew() {
     const { theme, toogleTheme } = useTheme();
     const [isLoading, setIsLoading] = useState(true);
   const [contractList, setContractList] = useState([]);
+  const [totalCount,setTotalCount] = useState(0)
   const [activeTab, setActiveTab] = useState(1);
-  const [accordionOpen, setAccordionOpen] = useState("");
+  const [accordionOpen, setAccordionOpen] = useState([1,2]);
   const [open, setOpen] = useState([]);
   const [active, setActive] = useState("grid");
   const [priceMaxi,setPriceMaxi] = useState(false)
@@ -331,6 +337,8 @@ function ContractListNew() {
         getContractList();
   }, []);
 
+  console.log(accordionOpen)
+
    const toggleAccordion = (id) => {
     if (accordionOpen.includes(id)) {
       setAccordionOpen((prev) => prev.filter((item) => item !== id)); // remove if already open
@@ -352,6 +360,7 @@ function ContractListNew() {
         const updated = [...prev, contract];
         if (!activeContractTab) setActiveContractTab(contract.id); // Set first active
         return updated;
+        
       }
     });
   };
@@ -359,12 +368,10 @@ function ContractListNew() {
 
   const fetchActiveContractTab =()=>{
     let contract = contractList.find((li)=>li.id===activeContractTab)
-    console.log(contract)
     request({
         url:`/icontract/backend/AllColumns/${contract?.contract_number}/${contract?.document_version_number}`,
         method:'GET',
     }).then((res)=>{
-        console.log(res)
         if(res.success){
             setShowSelected(res)
         }
@@ -378,14 +385,12 @@ function ContractListNew() {
     fetchActiveContractTab()
   },[activeContractTab])
 
-  console.log(showSelected)
 
   const handleFilterChange = (e,name)=>{
     if(e.target.checked){
         setFilterOption({...filterOption,[name]:e.target.name})
     }
   }
-  console.log(filterOption)
 
   const applyGridFilter =()=>{
      setIsLoading(true);
@@ -404,9 +409,9 @@ function ContractListNew() {
         method:'GET',
     }).then((res)=>{
          setIsLoading(false);
-        console.log(res)
         if(res.success){
             setGridContractData(res.data)
+            setTotalCount(res?.total_records)
         }
     }).catch((err)=>{
         console.log(err)
@@ -432,15 +437,21 @@ function ContractListNew() {
             <div class="contract-head-menu">
               <div className="menu-head-1">
                 <div className="menu-head-count">
-                  <div className="total">
-                    <div className="ico">
-                      <img src={theme === "Dark" ? fileImg : lightfile} />
+                  {isLoading ? (
+                    <TotalContracts />
+                  ) : (
+                    <div className="total">
+                      <div className="ico">
+                        <img src={theme === "Dark" ? fileImg : lightfile} />
+                      </div>
+
+                      <div className="d-flex align-items-center">
+                        Total Contracts
+                        <span className="count">{contractList?.length}</span>
+                      </div>
                     </div>
-                    <div className="d-flex align-items-center">
-                      Total Contracts
-                      <span className="count">{contractList?.length}</span>
-                    </div>
-                  </div>
+                  )}
+
                   {/* <div className="expire">
                     <div className="ico orange">
                       <img src={alertImg} />
@@ -549,26 +560,30 @@ function ContractListNew() {
                   </div>
                 </div>
               </div>
+
               <div className="col-9 ps-0">
-                <div className="contract-head-menu p-0 pe-2 contract-nav">
-                  <div className="menu-head-2">
-                    <div className="menu-nav-list">
-                      {selectedData?.map((list) => {
-                        return (
-                          <div
-                            className={`${
-                              activeContractTab === list?.id ? "active" : ""
-                            }`}
-                            onClick={() => setActiveContractTab(list?.id)}
-                            title={list.document_name}
-                          >
-                            {truncate(list.document_name, {
-                              length: activeContractTab === list?.id ? 40 : 20,
-                            })}
-                          </div>
-                        );
-                      })}
-                      {/* <div className="active">
+                {selectedData?.length > 0 ? (
+                  <>
+                    <div className="contract-head-menu p-0 pe-2 contract-nav">
+                      <div className="menu-head-2">
+                        <div className="menu-nav-list">
+                          {selectedData?.map((list) => {
+                            return (
+                              <div
+                                className={`${
+                                  activeContractTab === list?.id ? "active" : ""
+                                }`}
+                                onClick={() => setActiveContractTab(list?.id)}
+                                title={list.document_name}
+                              >
+                                {truncate(list.document_name, {
+                                  length:
+                                    activeContractTab === list?.id ? 40 : 20,
+                                })}
+                              </div>
+                            );
+                          })}
+                          {/* <div className="active">
                         Premier Health Alliance Agreement
                       </div>
                       <div>Premier Health Alliance Agreement</div>
@@ -576,239 +591,294 @@ function ContractListNew() {
                       <div className="last">
                         Premier Health Alliance Agreement
                       </div> */}
-                    </div>
-                  </div>
-                </div>
-                <div className="row me-0 hide-price">
-                  <div className={`col-6 pe-0 ${priceMaxi ? "close" : ""}`}>
-                    <div>
-                      <div class="contract-details-box">
-                        <div className="details-head">
-                          <h3>Contract Details</h3>
-                          <div>{/* <img src={maximize} /> */}</div>
-                        </div>
-                        <div className="contract-acc-box list-view">
-                          <Accordion
-                            open={accordionOpen}
-                            toggle={toggleAccordion}
-                            flush
-                            className="contract-acc"
-                          >
-                            <AccordionItem>
-                              <AccordionHeader targetId={1}>
-                                Contract Offer
-                              </AccordionHeader>
-                              <AccordionBody accordionId={1}>
-                                {showSelected?.contracts?.length > 0 && (
-                                  <tbody className="acc-list-data">
-                                    {Object.entries(
-                                      showSelected.contracts[0]
-                                    ).map(([key, value], index) =>
-                                      key !== "id" &&
-                                      key !== "created_at" &&
-                                      key !== "updated_at" &&
-                                      key !== "adjust_by" &&
-                                      key !== "category_pricing" &&
-                                      key !== "price_list_name" &&
-                                      key !== "pricing_method" ? (
-                                        <tr key={index}>
-                                          <td>
-                                            <span className="text-capitalize">
-                                              {key.replace(/_/g, " ")}
-                                            </span>
-                                          </td>
-                                          <td className="ans">
-                                            <span>{String(value)}</span>
-                                          </td>
-                                        </tr>
-                                      ) : (
-                                        ""
-                                      )
-                                    )}
-                                  </tbody>
-                                )}
-                              </AccordionBody>
-                            </AccordionItem>
-                            <AccordionItem>
-                              <AccordionHeader targetId={2}>
-                                Product Group
-                              </AccordionHeader>
-                              <AccordionBody accordionId={2}>
-                                {showSelected?.contracts?.length > 0 && (
-                                  <tbody className="acc-list-data">
-                                    {Object.entries(
-                                      showSelected.contracts[0]
-                                    ).map(([key, value], index) =>
-                                      key === "adjust_by" ||
-                                      key === "category_pricing" ||
-                                      key === "price_list_name" ||
-                                      key === "pricing_method" ? (
-                                        <tr key={index}>
-                                          <td>
-                                            <span className="text-capitalize">
-                                              {key.replace(/_/g, " ")}
-                                            </span>
-                                          </td>
-                                          <td className="ans">
-                                            <span>{String(value)}</span>
-                                          </td>
-                                        </tr>
-                                      ) : (
-                                        ""
-                                      )
-                                    )}
-                                  </tbody>
-                                )}
-                              </AccordionBody>
-                            </AccordionItem>
-                          </Accordion>
-                        </div>
-                      </div>
-                      <div></div>
-                    </div>
-                  </div>
-                  <div className={`col-6 ${priceMaxi ? "close" : ""}`}>
-                    <div>
-                      <div class="contract-details-box right">
-                        <div className="details-head">
-                          <h3>Tier Structure</h3>
-                          <div>
-                            <img src={maximize} />
-                            {/* {theme==="Light"? <img src={maximizelight}/>:<img src={maximize}/>} */}
-                          </div>
-                        </div>
-                        <div className="contract-acc-box list-view">
-                          <table className="tier-table">
-                            <thead>
-                              <th className="sno">Tier</th>
-                              <th>Vol Minimum</th>
-                              <th>Vol Maximum</th>
-                              <th>Discount</th>
-                              <th>Admin Fee</th>
-                              <th>Rebate</th>
-                            </thead>
-                            <tbody>
-                              {showSelected?.tier_structures?.length > 0 &&
-                                showSelected?.tier_structures?.map((tier) => {
-                                  return (
-                                    <tr>
-                                      <td className="sno">
-                                        {tier?.tier_level}
-                                      </td>
-                                      <td>{tier?.volume_min}</td>
-                                      <td>{tier?.volume_max}</td>
-                                      <td>{tier?.discount_percentage}</td>
-                                      <td>{tier?.admin_fee_percentage}</td>
-                                      <td>{tier?.rebate_percentage}</td>
-                                    </tr>
-                                  );
-                                })}
-                            </tbody>
-                          </table>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="col-12">
-                    <div class={`pricing-table-box ${priceMaxi ? "inc" : ""}`}>
-                      <div className="details-head">
-                        <h3>Product Pricing Table</h3>
-                        <div className="opt-btn">
-                          <span onClick={showSelected?.products?.length > 0 && handleHideAll}>
-                            <img src={open.length > 0 ?eyeCrossImg:eye} />
-                            {open.length > 0 ? "Hide All Tier Details" : "View All Tier Details"}
-                          </span>
-                          <img
-                            src={ priceMaxi ? theme==="Dark" ? minimizeDark : minimize : maximize }
-                            onClick={() => setPriceMaxi(!priceMaxi)}
-                          />
-                        </div>
+                    <div className="row me-0 hide-price">
+                      <div className={`col-6 pe-0 ${priceMaxi ? "close" : ""}`}>
+                        {isLoading ? (
+                          <ContractDetailsSkeleton />
+                        ) : (
+                          
+                            <div class="contract-details-box">
+                              <div className="details-head">
+                                <h3>Contract Details</h3>
+                                <div>{/* <img src={maximize} /> */}</div>
+                              </div>
+                              <div className="contract-acc-box list-view">
+                                <Accordion
+                                  open={accordionOpen}
+                                  toggle={toggleAccordion}
+                                  flush
+                                  className="contract-acc"
+                                >
+                                  <AccordionItem>
+                                    <AccordionHeader targetId={1}>
+                                      Contract Offer
+                                    </AccordionHeader>
+                                    <AccordionBody accordionId={1}>
+                                      {showSelected?.contracts?.length > 0 && (
+                                        <tbody className="acc-list-data">
+                                          {Object.entries(
+                                            showSelected.contracts[0]
+                                          ).map(([key, value], index) =>
+                                            key !== "id" &&
+                                            key !== "created_at" &&
+                                            key !== "updated_at" &&
+                                            key !== "adjust_by" &&
+                                            key !== "category_pricing" &&
+                                            key !== "price_list_name" &&
+                                            key !== "pricing_method" ? (
+                                              <tr key={index}>
+                                                <td>
+                                                  <span className="text-capitalize">
+                                                    {key.replace(/_/g, " ")}
+                                                  </span>
+                                                </td>
+                                                <td className="ans">
+                                                  <span>{String(value)}</span>
+                                                </td>
+                                              </tr>
+                                            ) : (
+                                              ""
+                                            )
+                                          )}
+                                        </tbody>
+                                      )}
+                                    </AccordionBody>
+                                  </AccordionItem>
+                                  <AccordionItem>
+                                    <AccordionHeader targetId={2}>
+                                      Product Group
+                                    </AccordionHeader>
+                                    <AccordionBody accordionId={2}>
+                                      {showSelected?.contracts?.length > 0 && (
+                                        <tbody className="acc-list-data">
+                                          {Object.entries(
+                                            showSelected.contracts[0]
+                                          ).map(([key, value], index) =>
+                                            key === "adjust_by" ||
+                                            key === "category_pricing" ||
+                                            key === "price_list_name" ||
+                                            key === "pricing_method" ? (
+                                              <tr key={index}>
+                                                <td>
+                                                  <span className="text-capitalize">
+                                                    {key.replace(/_/g, " ")}
+                                                  </span>
+                                                </td>
+                                                <td className="ans">
+                                                  <span>{String(value)}</span>
+                                                </td>
+                                              </tr>
+                                            ) : (
+                                              ""
+                                            )
+                                          )}
+                                        </tbody>
+                                      )}
+                                    </AccordionBody>
+                                  </AccordionItem>
+                                </Accordion>
+                              </div>
+                            </div>
+                        )}
                       </div>
-                      <div>
-                        <div className="product-table-container">
-                          <table className="product-tier-table">
-                            <thead>
-                              <tr className="head-sticky">
-                                <th width={"20%"}>NDC Number</th>
-                                <th>Product Number</th>
-                                <th>Size</th>
-                                <th>WAC Price</th>
-                              </tr>
-                            </thead>
-                          </table>
-                          {showSelected?.products?.length > 0 &&
-                            showSelected?.products?.map((item, index) => (
-                              <Accordion
-                                key={index}
-                                open={open}
-                                toggle={() => toggle(`item-${index}`)}
-                                className="product-accordion"
-                              >
-                                <AccordionItem>
-                                  <AccordionHeader
-                                    targetId={`item-${index}`}
-                                    className="product-header"
-                                  >
-                                    <div
-                                      className="product-header-cell"
-                                      style={{ width: "25%" }}
-                                    >
-                                      {item?.ndc_number}
-                                    </div>
-                                    <div
-                                      className="product-header-cell"
-                                      style={{ width: "25%" }}
-                                    >
-                                      {item?.product_name}
-                                    </div>
-                                    <div
-                                      className="product-header-cell"
-                                      style={{ width: "25%" }}
-                                    >
-                                      {item?.size}
-                                    </div>
-                                    <div className="product-header-cell">
-                                      {item?.wac_price}
-                                    </div>
-                                  </AccordionHeader>
-                                  <AccordionBody accordionId={`item-${index}`}>
-                                    {item?.tiers?.length > 0 ? (
-                                      <table className="product-tier-table">
-                                        <thead>
-                                          <tr className="price-th">
-                                            <th>Tier</th>
-                                            <th>Discount</th>
-                                            <th>Final Price</th>
-                                            <th>Savings</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {item?.tiers?.map((tier, i) => (
-                                            <tr key={i}>
-                                              <td>{tier?.tier}</td>
-                                              <td>{tier?.discount}</td>
-                                              <td>{tier?.final_price}</td>
-                                              <td className="savings-amount">
-                                                {tier?.savings}
+                      <div className={`col-6 ${priceMaxi ? "close" : ""}`}>
+                        {isLoading ? (
+                          <TierStructureSkeleton />
+                        ) : (
+                            <div class="contract-details-box right">
+                              <div className="details-head">
+                                <h3>Tier Structure</h3>
+                                <div>
+                                  <img src={maximize} />
+                                  {/* {theme==="Light"? <img src={maximizelight}/>:<img src={maximize}/>} */}
+                                </div>
+                              </div>
+                              <div className="contract-acc-box list-view">
+                                <table className="tier-table">
+                                  <thead>
+                                    <th className="sno">Tier</th>
+                                    <th>Vol Minimum</th>
+                                    <th>Vol Maximum</th>
+                                    <th>Discount</th>
+                                    <th>Admin Fee</th>
+                                    <th>Rebate</th>
+                                  </thead>
+                                  <tbody>
+                                    {showSelected?.tier_structures?.length >
+                                      0 &&
+                                      showSelected?.tier_structures?.map(
+                                        (tier) => {
+                                          return (
+                                            <tr>
+                                              <td className="sno">
+                                                {tier?.tier_level}
+                                              </td>
+                                              <td>
+                                                {tier?.volume_min
+                                                  ? `$${tier.volume_min}`
+                                                  : "No limit"}
+                                              </td>
+                                              <td>
+                                                {tier?.volume_max
+                                                  ? `$${tier.volume_max}`
+                                                  : "No limit"}
+                                              </td>
+                                              <td>
+                                                {tier?.discount_percentage}%
+                                              </td>
+                                              <td>
+                                                {tier?.admin_fee_percentage}%
+                                              </td>
+                                              <td>
+                                                {tier?.rebate_percentage}%
                                               </td>
                                             </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    ) : (
-                                      <div className="no-tier-message">
-                                        No tier pricing available.
-                                      </div>
-                                    )}
-                                  </AccordionBody>
-                                </AccordionItem>
-                              </Accordion>
-                            ))}
-                        </div>
+                                          );
+                                        }
+                                      )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                        )}
+                      </div>
+                      <div className="col-12">
+                        {isLoading ? (
+                          <ProductPricingDetails />
+                        ) : (
+                          <div
+                            class={`pricing-table-box ${
+                              priceMaxi ? "inc" : ""
+                            }`}
+                          >
+                            <div className="details-head">
+                              <h3>Product Pricing Table</h3>
+                              <div className="opt-btn">
+                                <span
+                                  onClick={
+                                    showSelected?.products?.length > 0 &&
+                                    handleHideAll
+                                  }
+                                >
+                                  <img
+                                    src={open.length > 0 ? eyeCrossImg : eye}
+                                  />
+                                  {open.length > 0
+                                    ? "Hide All Tier Details"
+                                    : "View All Tier Details"}
+                                </span>
+                                <img
+                                  src={
+                                    priceMaxi
+                                      ? theme === "Dark"
+                                        ? minimizeDark
+                                        : minimize
+                                      : maximize
+                                  }
+                                  onClick={() => setPriceMaxi(!priceMaxi)}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="product-table-container">
+                                <table className="product-tier-table">
+                                  <thead>
+                                    <tr className="head-sticky">
+                                      <th width={"20%"}>NDC Number</th>
+                                      <th>Product Number</th>
+                                      <th>Size</th>
+                                      <th>WAC Price</th>
+                                    </tr>
+                                  </thead>
+                                </table>
+                                {showSelected?.products?.length > 0 &&
+                                  showSelected?.products?.map((item, index) => (
+                                    <Accordion
+                                      key={index}
+                                      open={open}
+                                      toggle={() => toggle(`item-${index}`)}
+                                      className="product-accordion"
+                                    >
+                                      <AccordionItem>
+                                        <AccordionHeader
+                                          targetId={`item-${index}`}
+                                          className="product-header"
+                                        >
+                                          <div
+                                            className="product-header-cell"
+                                            style={{ width: "25%" }}
+                                          >
+                                            {item?.ndc_number}
+                                          </div>
+                                          <div
+                                            className="product-header-cell"
+                                            style={{ width: "25%" }}
+                                          >
+                                            {item?.product_name}
+                                          </div>
+                                          <div
+                                            className="product-header-cell"
+                                            style={{ width: "25%" }}
+                                          >
+                                            {item?.size}
+                                          </div>
+                                          <div className="product-header-cell">
+                                            {item?.wac_price}
+                                          </div>
+                                        </AccordionHeader>
+                                        <AccordionBody
+                                          accordionId={`item-${index}`}
+                                        >
+                                          {item?.tiers?.length > 0 ? (
+                                            <table className="product-tier-table">
+                                              <thead>
+                                                <tr className="price-th">
+                                                  <th>Tier</th>
+                                                  <th>Discount</th>
+                                                  <th>Final Price</th>
+                                                  <th>Savings</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {item?.tiers?.map((tier, i) => (
+                                                  <tr key={i}>
+                                                    <td>{tier?.tier}</td>
+                                                    <td>{tier?.discount}</td>
+                                                    <td>{tier?.final_price}</td>
+                                                    <td className="savings-amount">
+                                                      {tier?.savings}
+                                                    </td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          ) : (
+                                            <div className="no-tier-message">
+                                              No tier pricing available.
+                                            </div>
+                                          )}
+                                        </AccordionBody>
+                                      </AccordionItem>
+                                    </Accordion>
+                                  ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
+                  </>
+                ) : (
+                  <div className="no-contract-status">
+                    <div className="text-center">
+                      No Contract Selected
+                      <p>Select two or more contracts to see the overview</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </>
           )}
@@ -817,172 +887,179 @@ function ContractListNew() {
             <>
               <div className="col-3 m-0 pe-0 position-relative">
                 <div class="contract-search-box grid">
-                  <div className="filter-scroll">
-                    <div className="search-box-head grid">
-                      <h3>Filters</h3>
-                    </div>
-                    <h3 className="contract-status-head">Contract Status</h3>
-                    <div className="mb-4">
-                      <label class="radio-option" htmlFor="implemented">
-                        <input
-                          type="radio"
-                          id="implemented"
-                          checked={filterOption?.contract_status === "Active"}
-                          name="Active"
-                          onChange={(e) =>
-                            handleFilterChange(e, "contract_status")
-                          }
-                        />
-                        <span class="custom-radio"></span>
-                        Implemented
-                      </label>
-
-                      <label class="radio-option">
-                        <input
-                          type="radio"
-                          name="Expired"
-                          checked={filterOption?.contract_status === "Expired"}
-                          onChange={(e) =>
-                            handleFilterChange(e, "contract_status")
-                          }
-                        />
-                        <span class="custom-radio"></span>
-                        Expired
-                      </label>
-
-                      <label class="radio-option">
-                        <input
-                          type="radio"
-                          name="Terminated"
-                          checked={
-                            filterOption?.contract_status === "Terminated"
-                          }
-                          onChange={(e) =>
-                            handleFilterChange(e, "contract_status")
-                          }
-                        />
-                        <span class="custom-radio"></span>
-                        Terminated After Implementation
-                      </label>
-
-                      <label class="radio-option">
-                        <input
-                          type="radio"
-                          name="Draft"
-                          checked={filterOption?.contract_status === "Draft"}
-                          onChange={(e) =>
-                            handleFilterChange(e, "contract_status")
-                          }
-                        />
-                        <span class="custom-radio"></span>
-                        In Draft
-                      </label>
-                    </div>
-                    <div className="grid-filter-doc">
-                      <h3>Document Type</h3>
-                      <div>
-                        <Select
-                          styles={colourStyles}
-                          options={docTypeOption}
-                          value={docTypeOption?.filter(
-                            (li) => li.value === filterOption?.document_type
-                          )}
-                          onChange={(e) =>
-                            setFilterOption({
-                              ...filterOption,
-                              document_type: e.value,
-                            })
-                          }
-                        />
+                  {isLoading ? (
+                    <ContractFilter />
+                  ) : (
+                    <div className="filter-scroll">
+                      <div className="search-box-head grid">
+                        <h3>Filters</h3>
                       </div>
-                    </div>
-                    <div className="grid-date-range">
-                      <h3 className="contract-status-head">
-                        Effective Date Range
-                      </h3>
+                      <h3 className="contract-status-head">Contract Status</h3>
                       <div className="mb-4">
-                        <label class="radio-option">
+                        <label class="radio-option" htmlFor="implemented">
                           <input
                             type="radio"
-                            name="This Year"
-                            checked={filterOption.date_range === "This Year"}
+                            id="implemented"
+                            checked={filterOption?.contract_status === "Active"}
+                            name="Active"
                             onChange={(e) =>
-                              handleFilterChange(e, "date_range")
+                              handleFilterChange(e, "contract_status")
                             }
                           />
                           <span class="custom-radio"></span>
-                          This Year
+                          Implemented
                         </label>
 
                         <label class="radio-option">
                           <input
                             type="radio"
-                            name="Previous Year"
+                            name="Expired"
                             checked={
-                              filterOption.date_range === "Previous Year"
+                              filterOption?.contract_status === "Expired"
                             }
                             onChange={(e) =>
-                              handleFilterChange(e, "date_range")
+                              handleFilterChange(e, "contract_status")
                             }
                           />
                           <span class="custom-radio"></span>
-                          Previous Year
+                          Expired
                         </label>
 
                         <label class="radio-option">
                           <input
                             type="radio"
-                            name="Last 2 Years"
-                            checked={filterOption.date_range === "Last 2 Years"}
+                            name="Terminated"
+                            checked={
+                              filterOption?.contract_status === "Terminated"
+                            }
                             onChange={(e) =>
-                              handleFilterChange(e, "date_range")
+                              handleFilterChange(e, "contract_status")
                             }
                           />
                           <span class="custom-radio"></span>
-                          Last 2 Years
+                          Terminated After Implementation
                         </label>
 
                         <label class="radio-option">
                           <input
                             type="radio"
-                            name="This Month"
-                            checked={filterOption.date_range === "This Month"}
+                            name="Draft"
+                            checked={filterOption?.contract_status === "Draft"}
                             onChange={(e) =>
-                              handleFilterChange(e, "date_range")
+                              handleFilterChange(e, "contract_status")
                             }
                           />
                           <span class="custom-radio"></span>
-                          This Month
+                          In Draft
                         </label>
-                        <label class="radio-option">
-                          <input
-                            type="radio"
-                            name="Last 6 Months"
-                            checked={
-                              filterOption.date_range === "Last 6 Months"
-                            }
+                      </div>
+                      <div className="grid-filter-doc">
+                        <h3>Document Type</h3>
+                        <div>
+                          <Select
+                            styles={colourStyles}
+                            options={docTypeOption}
+                            value={docTypeOption?.filter(
+                              (li) => li.value === filterOption?.document_type
+                            )}
                             onChange={(e) =>
-                              handleFilterChange(e, "date_range")
+                              setFilterOption({
+                                ...filterOption,
+                                document_type: e.value,
+                              })
                             }
                           />
-                          <span class="custom-radio"></span>
-                          Last 6 Month
-                        </label>
-                        <label class="radio-option">
-                          <input
-                            type="radio"
-                            name="Last 12 Months"
-                            checked={
-                              filterOption.date_range === "Last 12 Months"
-                            }
-                            onChange={(e) =>
-                              handleFilterChange(e, "date_range")
-                            }
-                          />
-                          <span class="custom-radio"></span>
-                          Last 12 Month
-                        </label>
-                        {/* <label class="radio-option">
+                        </div>
+                      </div>
+                      <div className="grid-date-range">
+                        <h3 className="contract-status-head">
+                          Effective Date Range
+                        </h3>
+                        <div className="mb-4">
+                          <label class="radio-option">
+                            <input
+                              type="radio"
+                              name="This Year"
+                              checked={filterOption.date_range === "This Year"}
+                              onChange={(e) =>
+                                handleFilterChange(e, "date_range")
+                              }
+                            />
+                            <span class="custom-radio"></span>
+                            This Year
+                          </label>
+
+                          <label class="radio-option">
+                            <input
+                              type="radio"
+                              name="Previous Year"
+                              checked={
+                                filterOption.date_range === "Previous Year"
+                              }
+                              onChange={(e) =>
+                                handleFilterChange(e, "date_range")
+                              }
+                            />
+                            <span class="custom-radio"></span>
+                            Previous Year
+                          </label>
+
+                          <label class="radio-option">
+                            <input
+                              type="radio"
+                              name="Last 2 Years"
+                              checked={
+                                filterOption.date_range === "Last 2 Years"
+                              }
+                              onChange={(e) =>
+                                handleFilterChange(e, "date_range")
+                              }
+                            />
+                            <span class="custom-radio"></span>
+                            Last 2 Years
+                          </label>
+
+                          <label class="radio-option">
+                            <input
+                              type="radio"
+                              name="This Month"
+                              checked={filterOption.date_range === "This Month"}
+                              onChange={(e) =>
+                                handleFilterChange(e, "date_range")
+                              }
+                            />
+                            <span class="custom-radio"></span>
+                            This Month
+                          </label>
+                          <label class="radio-option">
+                            <input
+                              type="radio"
+                              name="Last 6 Months"
+                              checked={
+                                filterOption.date_range === "Last 6 Months"
+                              }
+                              onChange={(e) =>
+                                handleFilterChange(e, "date_range")
+                              }
+                            />
+                            <span class="custom-radio"></span>
+                            Last 6 Month
+                          </label>
+                          <label class="radio-option">
+                            <input
+                              type="radio"
+                              name="Last 12 Months"
+                              checked={
+                                filterOption.date_range === "Last 12 Months"
+                              }
+                              onChange={(e) =>
+                                handleFilterChange(e, "date_range")
+                              }
+                            />
+                            <span class="custom-radio"></span>
+                            Last 12 Month
+                          </label>
+                          {/* <label class="radio-option">
                           <input
                             type="radio"
                             name="custom"
@@ -994,140 +1071,141 @@ function ContractListNew() {
                           <span class="custom-radio"></span>
                           Custom
                         </label> */}
-                        {filterOption?.date_range === "custom" && (
-                          <div className="date-picker-container">
-                            <label>From Date</label>
-                            <div className="input-wrapper">
-                              <DatePicker
-                                //   selected={filterOption?.date_from && format(new Date(),'dd/MM/yyyy')}
-                                onChange={(date) =>
-                                  setFilterOption({
-                                    ...filterOption,
-                                    date_from: date,
-                                  })
-                                }
-                                placeholderText="Select From Date"
-                                className="date-input"
-                                calendarClassName="custom-calendar"
-                              />
-                            </div>
+                          {filterOption?.date_range === "custom" && (
+                            <div className="date-picker-container">
+                              <label>From Date</label>
+                              <div className="input-wrapper">
+                                <DatePicker
+                                  //   selected={filterOption?.date_from && format(new Date(),'dd/MM/yyyy')}
+                                  onChange={(date) =>
+                                    setFilterOption({
+                                      ...filterOption,
+                                      date_from: date,
+                                    })
+                                  }
+                                  placeholderText="Select From Date"
+                                  className="date-input"
+                                  calendarClassName="custom-calendar"
+                                />
+                              </div>
 
-                            <label>To Date</label>
-                            <div className="input-wrapper">
-                              {/* <FiCalendar className="calendar-icon" /> */}
-                              <DatePicker
-                                // selected={filterOption?.date_to ? format(new Date(),'dd/MM/yyyy'):''}
-                                onChange={(date) =>
-                                  setFilterOption({
-                                    ...filterOption,
-                                    date_to: date,
-                                  })
-                                }
-                                placeholderText="Select To Date"
-                                className="date-input"
-                                calendarClassName="custom-calendar"
-                              />
+                              <label>To Date</label>
+                              <div className="input-wrapper">
+                                {/* <FiCalendar className="calendar-icon" /> */}
+                                <DatePicker
+                                  // selected={filterOption?.date_to ? format(new Date(),'dd/MM/yyyy'):''}
+                                  onChange={(date) =>
+                                    setFilterOption({
+                                      ...filterOption,
+                                      date_to: date,
+                                    })
+                                  }
+                                  placeholderText="Select To Date"
+                                  className="date-input"
+                                  calendarClassName="custom-calendar"
+                                />
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="grid-filter-doc">
-                      <h3>Pricing Method</h3>
-                      <div>
-                        <Select
-                          styles={colourStyles}
-                          options={pricingOption}
-                          value={pricingOption?.filter(
-                            (li) => li.value === filterOption?.pricing_method
                           )}
-                          onChange={(e) =>
-                            setFilterOption({
-                              ...filterOption,
-                              pricing_method: e.value,
-                            })
-                          }
-                        />
+                        </div>
                       </div>
-                    </div>
-                    <div className="grid-adjust-by">
-                      <h3>Adjust By</h3>
-                      <div className="mb-4">
+                      <div className="grid-filter-doc">
+                        <h3>Pricing Method</h3>
+                        <div>
+                          <Select
+                            styles={colourStyles}
+                            options={pricingOption}
+                            value={pricingOption?.filter(
+                              (li) => li.value === filterOption?.pricing_method
+                            )}
+                            onChange={(e) =>
+                              setFilterOption({
+                                ...filterOption,
+                                pricing_method: e.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="grid-adjust-by">
+                        <h3>Adjust By</h3>
+                        <div className="mb-4">
+                          <label class="radio-option">
+                            <input
+                              type="radio"
+                              name="%"
+                              checked={filterOption?.adjust_by === "%"}
+                              onChange={(e) => {
+                                handleFilterChange(e, "adjust_by");
+                              }}
+                            />
+                            <span class="custom-radio"></span>
+                            Percentage (%)
+                          </label>
+
+                          <label class="radio-option">
+                            <input
+                              type="radio"
+                              name="$"
+                              checked={filterOption?.adjust_by === "$"}
+                              onChange={(e) => {
+                                handleFilterChange(e, "adjust_by");
+                              }}
+                            />
+                            <span class="custom-radio"></span>
+                            Dollars ($)
+                          </label>
+                        </div>
+                      </div>
+                      <div className="grid-source-type">
+                        <h3>Source Type</h3>
                         <label class="radio-option">
                           <input
                             type="radio"
-                            name="%"
-                            checked={filterOption?.adjust_by === "%"}
+                            name="NEW"
+                            checked={filterOption?.source_type === "NEW"}
                             onChange={(e) => {
-                              handleFilterChange(e, "adjust_by");
+                              handleFilterChange(e, "source_type");
                             }}
                           />
                           <span class="custom-radio"></span>
-                          Percentage (%)
+                          New
                         </label>
 
                         <label class="radio-option">
                           <input
                             type="radio"
-                            name="$"
-                            checked={filterOption?.adjust_by === "$"}
+                            name="AMENDMENT"
+                            checked={filterOption?.source_type === "AMENDMENT"}
                             onChange={(e) => {
-                              handleFilterChange(e, "adjust_by");
+                              handleFilterChange(e, "source_type");
                             }}
                           />
                           <span class="custom-radio"></span>
-                          Dollars ($)
+                          Amendment
                         </label>
                       </div>
-                    </div>
-                    <div className="grid-source-type">
-                      <h3>Source Type</h3>
-                      <label class="radio-option">
-                        <input
-                          type="radio"
-                          name="NEW"
-                          checked={filterOption?.source_type === "NEW"}
-                          onChange={(e) => {
-                            handleFilterChange(e, "source_type");
-                          }}
-                        />
-                        <span class="custom-radio"></span>
-                        New
-                      </label>
-
-                      <label class="radio-option">
-                        <input
-                          type="radio"
-                          name="AMENDMENT"
-                          checked={filterOption?.source_type === "AMENDMENT"}
-                          onChange={(e) => {
-                            handleFilterChange(e, "source_type");
-                          }}
-                        />
-                        <span class="custom-radio"></span>
-                        Amendment
-                      </label>
-                    </div>
-                    <div className="apply-filter-btn grid">
-                      <div className="filter-btn">
-                        <button
-                          className="clr-btn"
-                          onClick={() => setFilterOption({})}
-                        >
-                          Clear
-                        </button>
-                        <button
-                          className="apply-btn"
-                          onClick={() => applyGridFilter()}
-                        >
-                          Apply Filters
-                        </button>
+                      <div className="apply-filter-btn grid">
+                        <div className="filter-btn">
+                          <button
+                            className="clr-btn"
+                            onClick={() => setFilterOption({})}
+                          >
+                            Clear
+                          </button>
+                          <button
+                            className="apply-btn"
+                            onClick={() => applyGridFilter()}
+                          >
+                            Apply Filters
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
-              <div className="col-9 ps-0">
+              <div className="col-9 ps-0 contract-card-box">
                 {/* <div className="contract-head-menu p-0 pe-2 contract-nav">
                   <div className="menu-head-2">
                     <div className="menu-nav-list">
@@ -1174,7 +1252,7 @@ function ContractListNew() {
                   </div>
                 ) : (
                   <div className="row grid-card-row">
-                    {gridContractData?.length > 0 &&
+                    {gridContractData?.length > 0 ? (
                       gridContractData?.map((list) => {
                         return (
                           <div className="col-4 p-0">
@@ -1217,7 +1295,8 @@ function ContractListNew() {
                               </div>
                               <hr
                                 style={{
-                                  borderColor: theme==="Dark" ? "#eee" : "#333",
+                                  borderColor:
+                                    theme === "Dark" ? "#eee" : "#333",
                                   height: 2,
                                   borderWidth: 1,
                                   opacity: 0.1,
@@ -1233,7 +1312,7 @@ function ContractListNew() {
                                 <div>
                                   <span className="type">Customer</span>{" "}
                                   <span className="value">
-                                    {list?.contracts[0]?.author}
+                                    {list?.contracts[0]?.owner}
                                   </span>
                                 </div>
                                 <div>
@@ -1245,7 +1324,8 @@ function ContractListNew() {
                               </div>
                               <hr
                                 style={{
-                                  borderColor: theme==="Dark" ? "#eee" : "#333",
+                                  borderColor:
+                                    theme === "Dark" ? "#eee" : "#333",
                                   height: 2,
                                   borderWidth: 1,
                                   opacity: 0.1,
@@ -1268,7 +1348,7 @@ function ContractListNew() {
                                   </div>
                                 </div>
                                 <div>
-                                 <div className="start">End Date</div>
+                                  <div className="start">End Date</div>
                                   <div className="date">
                                     {list?.contracts[0]?.end_date &&
                                       format(
@@ -1281,7 +1361,16 @@ function ContractListNew() {
                             </div>
                           </div>
                         );
-                      })}
+                      })
+                    ) : (
+                      <div
+                        className={`text-center my-5 ${
+                          theme === "Dark" ? "text-white" : "text-dark"
+                        }`}
+                      >
+                        No Results Found
+                      </div>
+                    )}
 
                     {/* <div className="col-4 p-0">
                     <div className="grid-card">

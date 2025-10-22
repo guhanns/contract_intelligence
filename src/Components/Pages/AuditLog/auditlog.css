@@ -1,0 +1,44 @@
+.audit-header-container{
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #2f2f2f;
+}
+
+.btn-group-tabs {
+  display: inline-flex;
+  border: 1px solid #2f2f2f;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #1e1e1e;
+}
+
+.btn-group-tabs__button {
+  padding: 8px 20px;
+  border: none;
+  background: none;
+  color: #b0b0b0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-group-tabs__button.active {
+  background-color: #2c2c2c;
+  color: #ffffff;
+}
+
+.btn-group-tabs__button:hover {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+
+.btn-group-tabs__button:not(:last-child) {
+  border-right: 1px solid #2f2f2f;
+}
+
+
+.audit-main-section{
+    overflow: hidden;
+}

@@ -6,7 +6,7 @@ import trash from "../../../images/icons/trash-01.svg";
 import uploadImg from "../../../images/icons/upload.svg";
 import fileImg from "../../../images/icons/contract-file.svg";
 import { useNavigate } from "react-router-dom";
-import request from "../../../api/api";
+import request, { NodeURL } from "../../../api/api";
 import toast from "react-hot-toast";
 import axios from "axios";
 import arrow_narrow_left from "../../../images/icons/arrow-narrow-left.svg";
@@ -16,14 +16,19 @@ import filelight from './../../../images/upload_icons/fileLight.svg'
 import filedark from './../../../images/upload_icons/fileDark.svg'
 import trashdark from'./../../../images/upload_icons/trashDark.svg'
 import trashlight from'./../../../images/upload_icons/trashLight.svg'
+import { useMsal } from "@azure/msal-react";
 
 function Upload() {
   const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [isUpload,setIsUpload] = useState(false)
     const { theme, toogleTheme } = useTheme();
+    const { accounts } = useMsal();
+ 
+  // Get current logged-in user from SSO
+  const currentUser = accounts.length > 0 ? accounts[0] : null;
+  const userName = currentUser ? (currentUser.name || currentUser.username || 'Unknown User') : 'Anonymous User';
   
-  console.log(files)
 
   const [uploadProgress, setUploadProgress] = useState({
     price: 0,
@@ -114,11 +119,16 @@ const handleUpload = async () => {
 
   try {
     // Upload all files to S3
-    await Promise.all(
+    const uploadResults = await Promise.all(
       files.map(async (li) => {
         const formData = new FormData();
         formData.append("file", li.file);
-        await axios.post("https://icontract-backend.srm-tech.com/icontract/backend/uploadtos3", formData);
+        formData.append("author", userName); // Use actual SSO logged-in user
+        const response = await axios.post(`${NodeURL}/icontract/backend/uploadtos3`, formData);
+        return {
+          originalFile: li,
+          s3Filename: response.data.uploaded_filename
+        };
       })
     );
 
@@ -126,7 +136,7 @@ const handleUpload = async () => {
     toast.success("Upload Completed");
 
     //Navigate immediately after upload
-    navigate("/list", { state: { fromUpload: true, files } });
+    navigate("/list", { state: { fromUpload: true, files ,uploadResults} });
   } catch (err) {
     console.error("Upload failed:", err);
     toast.dismiss();
@@ -183,7 +193,7 @@ const handleUpload = async () => {
                         Contract Document: {fileObj.file.name}
                       </span>
                     </div>
-                    <small className="text-white">
+                    <small className={theme==='Dark'?'text-white':'text-dark'}>
                       <i>
                         {fileObj.progress === 100 ? (
                           <div className="trash-round">

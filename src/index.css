@@ -209,6 +209,9 @@
 :root[data-theme="Light"] {
   --white-bg:#FFFFFF;
   --bg: #FBF0FF;
+   --bg-primary:#F9FAFB;
+  --bg-secondary:#FFFFFF;
+  --bg-secondary2:#F9FAFB;
   --text: #101828;
   --sidebar:#FFFFFF;
   --sidebar-top:#FFFFFF;
@@ -437,6 +440,30 @@
  --chat-active-entities-border:#E4E7EC;
  --react-select-border-color:#D0D5DD;
  --contract-radio-btn-border:#D0D5DD;
+  --changes-head-border:#D0D5DD;
+ --changes-items-bg:#FFFFFF;
+--changes-item-border:#E4E7EC;
+--replaced-badge-bg:#EFF8FF;
+--replaced-badge-border:#B2DDFF;
+--replaced-badge-text-color:#175CD3;
+--removed-badge-bg:#FEF3F2;
+--removed-badge-txt-color:#B42318;
+--removed-badge-border:#FECDCA;
+--added-badge-bg:#ECFDF3;
+--added-badge-txt-color:#067647;
+--added-badge-border:#ABEFC6;
+--modal-bg-explain:#ffffff;
+--modal-title-text-color:#000000;
+--contract-comment-title:#FFFFFF;
+  --contract-comment-title-head:#101828;
+  --contract-comment-title-border:#D0D5DD;
+   --contract-comment-body:#FFFFFF;
+    --contract-body-title-name-of-cust:#101828;
+    --contract-comment-yesterday:#475467;
+      --contract-comment-cust:#FFFFFF;
+       --contract-comment-cust-para:#101828;
+          --contract-comment-cust-para-border:#E4E7EC;
+          --border-ppt-color:#E4E7EC;
 }
 
 :root[data-theme="Dark"] {
@@ -446,6 +473,9 @@
   --viewer-pdf-toolbar-background-color:#0C111D;
   --bg: #0C111D;
   --tier-summary-bg:#0C111D;
+  --bg-secondary:#161B26;
+  --bg-secondary2:#161B26;
+  --bg-primary:#0C111D;
   --text: #F5F5F6;
   --sidebar:#0C111D;
   --sidebar-top:#0C111D;
@@ -670,6 +700,32 @@
 --chat-active-entities-border:#2c2c2c;
 --react-select-border-color:#333741;
 --contract-radio-btn-border:#333741;
+--changes-head-bg:#161B26;
+--changes-head-border:#333741;
+ --changes-items-bg:#1F242F;
+--changes-item-border:#1F242F;
+--replaced-badge-bg:#102A56;
+--replaced-badge-border:#1849A9;
+--replaced-badge-text-color:#84CAFF;
+--removed-badge-bg:#7f1d1d;
+--removed-badge-txt-color:#fca5a5;
+--removed-badge-border:#912018;
+--added-badge-bg:#064e3b;
+--added-badge-txt-color:#86efac;
+--added-badge-border:#085D3A;
+--modal-bg-explain:#000000;
+--modal-title-text-color:#ffffff;
+--contract-comment-title:#FFFFFF;
+--contract-comment-title-border:#333741;
+ --contract-comment-title: #161B26;
+ --contract-comment-title-head:#F5F5F6;
+ --contract-comment-body:#1F242F;
+ --contract-body-title-name-of-cust:#F5F5F6;
+ --contract-comment-yesterday:#94969C;
+  --contract-comment-cust:#F5F5F6;
+    --contract-comment-cust-para:#F5F5F6;
+   --contract-comment-cust-para-border:#1F242F;
+   --border-ppt-color:#1F242F;
 
 
 }

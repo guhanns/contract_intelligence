@@ -11,7 +11,7 @@ import loadingImg from "../../../images/icons/Group 3.svg";
 import lightLoading from "../../../images/icons/lightLoading.svg";
 import pricingPdf from "./Product_Pricing_Table.pdf";
 import { Accordion, AccordionBody, AccordionHeader, AccordionItem, Modal, ModalBody, ModalHeader } from "reactstrap";
-import request from "../../../api/api";
+import request, { NodeURL } from "../../../api/api";
 import { useDispatch, useSelector } from "react-redux";
 import ReactMarkdown from 'react-markdown';
 import {
@@ -69,9 +69,8 @@ function Chat() {
     }
     setSendMessage("");
     dispatch(addMessageByUser(question));
-    axios.post('https://intell-chatbot.srm-tech.com/icontract/chatbot/ask',{question:question}).then((res) => {
+    axios.post(`${NodeURL}/icontract/chatbot/ask`,{question:question}).then((res) => {
         setIsLoading(false);
-        
         // setMessages(res?.data?.);
         dispatch(addMessageByBot(res?.data))
       })
@@ -83,13 +82,12 @@ function Chat() {
 
   const loadPdf = (filename,contract_number,version) => {
   axios
-    .get(`https://icontract-backend.srm-tech.com/icontract/backend/download/${filename}`, {
+    .get(`${NodeURL}/icontract/backend/download/${filename}`, {
       responseType: 'blob',  // Important to handle PDF correctly
     })
     .then(async(res) => {
       if(!isPdfPreview) setIsPdfPreview(!isPdfPreview);
       let blobUrl = URL.createObjectURL(res.data);
-      console.log(blobUrl);
       setPdfUrl({
         url:blobUrl,
         filename:filename
@@ -108,7 +106,6 @@ const fetchActiveContract =(contract_number,version)=>{
          url:`/icontract/backend/AllColumns/${contract_number}/${version}`,
         method:'GET',
     }).then((res)=>{
-        console.log(res)
         if(res.success){
           setIsDatLoading(false)
             setEntities(res)
@@ -120,7 +117,7 @@ const fetchActiveContract =(contract_number,version)=>{
 
 
 const getSampleQuestion =()=>{
-  axios.get('https://intell-chatbot.srm-tech.com/icontract/chatbot/sample_questions').then((res)=>{
+  axios.get(`${NodeURL}/icontract/chatbot/sample_questions`).then((res)=>{
       setSampleQ(res.data?.sample_questions?.splice(0,3))
   }).catch((err)=>{
     console.log(err)
@@ -216,7 +213,7 @@ useEffect(()=>{
                       {msg.role === "user" ? (
                         <div className="chat-right">
                           <div className="chat-msg right">
-                            <div className="by">You</div>
+                            {/* <div className="by">You</div> */}
                             <div className="msg right">{msg.message}</div>
                           </div>
                         </div>
@@ -233,29 +230,24 @@ useEffect(()=>{
                               </ReactMarkdown>
                               {/* {renderBulletPoints()} */}
                             </div>
-                            {msg?.contract_filenames ?? (
+                            {msg?.document_versions?? (
                               <div className="mb-5">
                                 <div>
-                                  {msg?.message?.contract_filenames.length >
+                                  {msg?.message?.document_versions.length >
                                     0 && (
                                     <>
                                       <span className="text-secondary">
                                         Source{" "}
                                       </span>
-                                      {msg?.message?.contract_filenames?.map(
+                                      {msg?.message?.document_versions?.map(
                                         (pdf) => {
-                                          let contract =
-                                            msg?.message?.sql_results?.find(
-                                              (li) => li.document_path === pdf
-                                            );
-                                            console.log(contract)
                                           return (
                                             <>
                                               <img
                                                 src={pdfRedIcon}
                                                 className="pdf-icons"
                                                 onClick={() =>
-                                                  loadPdf(pdf, contract?.contract_number,contract?.document_version_number)
+                                                  loadPdf(pdf.filename, pdf?.contract_number,pdf?.version)
                                                 }
                                                 title={pdf}
                                               />
@@ -570,6 +562,7 @@ useEffect(()=>{
         // toggle={() => setIsMaxi(!isMaxi)}
         centered
         fullscreen
+        zIndex={4000}
       >
         <ModalHeader toggle={() => setIsMaxi(!isMaxi)}></ModalHeader>
         <ModalBody>

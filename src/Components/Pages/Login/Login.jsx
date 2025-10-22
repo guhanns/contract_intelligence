@@ -32,13 +32,12 @@ function Login() {
     //   return toast.error("Password required")
     // }
 
-    console.log(user);
     // navigate('/dashboard')
   };
 
   const login = () => {
-    // instance.loginRedirect({ scopes: ["user.read"] });
-    navigate('/contract')
+    instance.loginRedirect({ scopes: ["user.read"] });
+    // navigate('/contract')
   };
   return (
     <div className="container-fluid login-bg">

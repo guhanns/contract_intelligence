@@ -1,0 +1,32 @@
+ 
+.modal-content{
+    background-color:var(--modal-bg-explain) ;
+    border-radius: 12px;
+}
+ 
+.modal-header{
+        background-color:var(--modal-bg-explain) ;
+ 
+}
+.modal-body{
+            background-color:var(--modal-bg-explain) ;
+    color: var(--modal-title-text-color);
+ 
+}
+ 
+.modal-title{
+    color: var(--modal-title-text-color);
+}
+ 
+
+.Modal-body-explainthis{
+    padding: 24px;
+}
+
+
+.Modal-head-explainthis{
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-top: 24px;
+    padding-bottom: 0px;
+}

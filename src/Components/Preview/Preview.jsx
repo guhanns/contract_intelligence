@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState, version } from "react";
 import Layouts from "../Pages/Layouts/Layouts";
 import "./preview.css";
 import classnames from "classnames";
@@ -9,9 +9,20 @@ import xmlImg from "../../images/icons/file-02.svg";
 import arrow_narrow_left from "../../images/icons/arrow-narrow-left.svg";
 import left_arrow from "../../images/icons/left-arrow.svg";
 import right_arrow from "../../images/icons/right-arrow.svg";
+import logo from "../../images/icons/SRM_chat-logo.svg";
+import externalLink from "../../images/icons/external-link.svg";
+import refreshimg from "../../images/icons/refresh.svg";
+import refreshLightimg from "../../images/icons/refresh-light.svg";
+import layoutLeft from "../../images/icons/layout-left.svg";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from "remark-gfm";
+import { truncate } from "lodash";
+import DatePicker from "react-datepicker";
+import {Calendar, CircleAlert, CircleCheckBig, EllipsisVertical, Pencil, TriangleAlert} from  'lucide-react'
 
 import contractPdf from "./SRM Pharma Contract.pdf";
 import pricingPdf from "./Product_Pricing_Table.pdf";
+
 // import demoexcel from "./ContractEntities.xlsx";
 
 import {
@@ -21,399 +32,156 @@ import {
   AccordionItem,
   Button,
   Col,
+  DropdownItem,
+  DropdownMenu,
+  DropdownToggle,
+  Modal,
+  ModalBody,
+  ModalHeader,
   Nav,
   NavItem,
   NavLink,
+  Offcanvas,
+  OffcanvasBody,
+  OffcanvasHeader,
   Row,
   TabContent,
   TabPane,
+  Tooltip,
+  UncontrolledDropdown,
+  UncontrolledTooltip,
 } from "reactstrap";
 import toast from "react-hot-toast";
-import request from "../../api/api";
+import request, { NodeURL } from "../../api/api";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import axios from "axios";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useTheme } from "../../Themecontext";
+import chatAi from '../../images/icons/chat_entities.svg';
+import { useMsal } from "@azure/msal-react";
+import { addMessageByBot, addMessageByUser, clearChat } from "../redux/features/previewChat";
+import { format, getTime, isToday, isYesterday } from "date-fns";
+import Select from "react-select";
+import { colourStyles } from "../Pages/ContractList/ContractListNew";
+import PdfViewerWithPopup from "../Pages/PDFViewer/PdfViewerWithPopup";
+import closeImg from "../../images/icons/x-comments.svg";
+import avatar from "../../images/icons/Avatar-comment.svg";
+import dots from "../../images/icons/dots-vertical-comment.svg";
+import Avatar from "@mui/material/Avatar";
 
-const tier = {
-  tier_summary: [
+const docTypeOption = [
     {
-      tier_level: 1,
-      purchase_volume_min: 0,
-      purchase_volume_max: 249999,
-      price_discount_percentage: 10.0,
-      administrative_fee_percentage: 2.0,
-      rebate_percentage: 0.0,
+        label:'Group (GROUP)',
+        value:'GPO'
     },
     {
-      tier_level: 2,
-      purchase_volume_min: 250000,
-      purchase_volume_max: 999999,
-      price_discount_percentage: 15.0,
-      administrative_fee_percentage: 2.0,
-      rebate_percentage: 1.5,
+        label:'Independent Customer Contract (IND)',
+        value:'IND'
     },
     {
-      tier_level: 3,
-      purchase_volume_min: 1000000,
-      purchase_volume_max: null,
-      price_discount_percentage: 20.0,
-      administrative_fee_percentage: 3.0,
-      rebate_percentage: 3.0,
-    },
-  ],
-  products: [
-    {
-      ndc_number: "65483-1021-30",
-      product_name: "Cardiolex 10mg",
-      size: "30 tablets",
-      wac_price: "$195.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$175.50",
-          savings: "$19.50",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$165.75",
-          savings: "$29.25",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$156.00",
-          savings: "$39.00",
-        },
-      ],
+        label:'IDN Buying Group Contract (IDN)',
+        value:'IDN'
     },
     {
-      ndc_number: "65483-1022-30",
-      product_name: "Cardiolex 20mg",
-      size: "30 tablets",
-      wac_price: "$275.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$247.50",
-          savings: "$27.50",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$233.75",
-          savings: "$41.25",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$220.00",
-          savings: "$55.00",
-        },
-      ],
+        label:'FSS Contract',
+        value:'FSS'
     },
     {
-      ndc_number: "65483-1023-30",
-      product_name: "Cardiolex 40mg",
-      size: "30 tablets",
-      wac_price: "$395.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$355.50",
-          savings: "$39.50",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$335.75",
-          savings: "$59.25",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$316.00",
-          savings: "$79.00",
-        },
-      ],
+        label:'PHS Contract',
+        value:'PHS'
     },
     {
-      ndc_number: "65483-2041-60",
-      product_name: "Neurovex 25mg",
-      size: "60 capsules",
-      wac_price: "$425.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$382.50",
-          savings: "$42.50",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$361.25",
-          savings: "$63.75",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$340.00",
-          savings: "$85.00",
-        },
-      ],
+        label:'Master Contract (MA)',
+        value:'MA'
     },
     {
-      ndc_number: "65483-2042-60",
-      product_name: "Neurovex 50mg",
-      size: "60 capsules",
-      wac_price: "$625.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$562.50",
-          savings: "$62.50",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$531.25",
-          savings: "$93.75",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$500.00",
-          savings: "$125.00",
-        },
-      ],
+        label:'Institutional Contract (INST)',
+        value:'INST'
     },
     {
-      ndc_number: "65483-2043-60",
-      product_name: "Neurovex 100mg",
-      size: "60 capsules",
-      wac_price: "$895.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$805.50",
-          savings: "$89.50",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$760.75",
-          savings: "$134.25",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$716.00",
-          savings: "$179.00",
-        },
-      ],
+        label:'Managed Care Contract (MCO)',
+        value:'MCO'
     },
     {
-      ndc_number: "65483-3051-01",
-      product_name: "Immunolex 150mg Injection",
-      size: "1 vial",
-      wac_price: "$1250.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$1125.00",
-          savings: "$125.00",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$1062.50",
-          savings: "$187.50",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$1000.00",
-          savings: "$250.00",
-        },
-      ],
-    },
-    {
-      ndc_number: "65483-3052-01",
-      product_name: "Immunolex 300mg Injection",
-      size: "1 vial",
-      wac_price: "$2450.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$2205.00",
-          savings: "$245.00",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$2082.50",
-          savings: "$367.50",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$1960.00",
-          savings: "$490.00",
-        },
-      ],
-    },
-    {
-      ndc_number: "65483-4071-01",
-      product_name: "Respiraclear 50mcg Inhaler",
-      size: "1 inhaler",
-      wac_price: "$185.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$166.50",
-          savings: "$18.50",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$157.25",
-          savings: "$27.75",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$148.00",
-          savings: "$37.00",
-        },
-      ],
-    },
-    {
-      ndc_number: "65483-4072-01",
-      product_name: "Respiraclear 100mcg Inhaler",
-      size: "1 inhaler",
-      wac_price: "$245.00",
-      total_tiers: 3,
-      tiers: [
-        {
-          tier: 1,
-          discount: "10%",
-          final_price: "$220.50",
-          savings: "$24.50",
-        },
-        {
-          tier: 2,
-          discount: "15%",
-          final_price: "$208.25",
-          savings: "$36.75",
-        },
-        {
-          tier: 3,
-          discount: "20%",
-          final_price: "$196.00",
-          savings: "$49.00",
-        },
-      ],
-    },
-  ],
-  summary: {
-    total_products: 10,
-    total_tiers: 3,
-  },
-};
+        label:'Medicare (MCARE)',
+        value:'MCARE'
+    }
+]
 
-const result = {
-  result: {
-    "Contract Offer": [
-      {
-        field: "startDate",
-        answer: "2025/07/01",
-      },
-      {
-        field: "endDate",
-        answer: "2030/06/30",
-      },
-      {
-        field: "document Id",
-        answer: "PPPH18SR01",
-      },
-      {
-        field: "document Name",
-        answer: "Premier Health Alliance Agreement with SRM Pharmaceuticals",
-      },
-      {
-        field: "document Type",
-        answer: "GROUP",
-      },
-      {
-        field: "document Status",
-        answer: "Active",
-      },
-      {
-        field: "document Version Number",
-        answer: "1",
-      },
-      {
-        field: "document Version Creation Date",
-        answer: "5/23/2025",
-      },
-      {
-        field: "owner",
-        answer: "Administrator",
-      },
-      {
-        field: "program only",
-        answer: "NO",
-      },
-      {
-        field: "source type",
-        answer: "NEW",
-      },
-    ],
-    "Product Group": [
-      {
-        field: "adjust By",
-        answer: "%",
-      },
-      {
-        field: "category Pricing",
-        answer: "PRICE",
-      },
-      {
-        field: "price List Name",
-        answer: "WAC",
-      },
-      {
-        field: "Pricing Method",
-        answer: "TIER",
-      },
-      {
-        field: "Number of Tiers",
-        answer: "3",
-      },
-    ],
+const pricingOption = [
+    {
+        label:'Fixed Pricing Method (FIXED)',
+        value:'FIXED'
+    },
+    {
+        label:'List Pricing Method (LIST)',
+        value:'LIST'
+    },
+    {
+        label:'Discount-Off-List Pricing Method (DOL)',
+        value:'DOL'
+    },
+    {
+        label:'Tiered Pricing Method (TIER)',
+        value:'TIER'
+    },
+    {
+        label:'Dynamic Discount Off List Pricing Method (DDOL)',
+        value:'DDOL'
+    },
+    {
+        label:'Dynamic Tiered Pricing Method (DTIER)',
+        value:'DTIER'
+    },
+    {
+        label:'Order Quantity (OOD)',
+        value:'OOD'
+    },
+]
+
+const contractStatus = [
+  {
+    label:'Implemented',
+    value:'Active'
   },
-};
+  {
+    label:"Expired",
+    value:"Expired"
+  },
+  {
+    label:"Terminated",
+    value:"Terminated"
+  },
+  {
+    label:"Draft",
+    value:"Draft"
+  }
+
+]
+
+const adjustOption =[
+  {
+    label:'Percentage(%)',
+    value:'%'
+  },
+  {
+    label:'Dollars($)',
+    value:'$'
+  }
+]
+
+const sourceOption =[
+  {
+    label:'New',
+    value:'New'
+  },
+  {
+    label:'Amendment',
+    value:'Amendment'
+  }
+]
 
 const accordionData = [
   {
@@ -474,24 +242,155 @@ export const loadingStatus = [
   "Ready! Loading your insights…",
 ];
 
+const sections = [
+  {
+    title: '1. Introduction and General',
+    subsections: [
+      '1.1 Purpose and Scope',
+      '1.2 Parties to the Agreement',
+      '1.3 Key Definitions (Glossary)',
+      '1.4 Term, Termination, Renewal'
+    ]
+  },
+  { title: '2. Administrative Services', subsections: [] },
+  { title: '3. Claims Processing and Payment', subsections: [] },
+  { title: '4. Pharmacy Network Management', subsections: [] },
+  { title: '5. Formulary and Drug Utilization Review', subsections: [] },
+  { title: '6. Clinical and Specialty Programs', subsections: [] },
+  { title: '7. Financial Terms and Payment', subsections: [] },
+  { title: '8. Manufacturer Rebates', subsections: [] }
+];
+
+export const formatMessageTime = (date) => {
+  const now = new Date();
+  const messageDate = new Date(date);
+
+  const diffInMinutes = Math.floor((now - messageDate) / (1000 * 60));
+
+  if (diffInMinutes < 1) {
+    return "Just now";
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes} min ago`;
+  } else if (isToday(messageDate)) {
+    return format(messageDate, "'Today', hh:mm a");
+  } else if (isYesterday(messageDate)) {
+    return format(messageDate, "'Yesterday', hh:mm a");
+  } else {
+    return format(messageDate, "dd MMM yyyy, hh:mm a");
+  }
+};
+
 function Preview() {
+  const iframeRef = useRef(null);
   const location = useLocation();
+  const dispatch = useDispatch()
+  const chatEndRef = useRef(null);
   const contractsData = useSelector((state)=>state.contract.contracts)
+  const { chatMessages } = useSelector((state) => state.preview);
+  const [versionList,setVersionList] = useState([])
+  const [versionOpt,setVersionOpt] = useState([])
    const { theme, toogleTheme } = useTheme();
+    const { instance, accounts } = useMsal();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSection,setIsSection] = useState(false)
+  const [histLoading,setHistLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("1");
   const [accordionOpen, setAccordionOpen] = useState("");
   const [responseData, setResponseData] = useState({});
   const [contractOffer, setContractOffer] = useState([]);
+  const [contractOfferWithScore, setContractOfferWithScore] = useState([]);
   const [productGroup, setProductGroup] = useState([]);
   const [tierDataProduct, setTierDataProduct] = useState([]);
+  const [sendMessage, setSendMessage] = useState("");
   const [tierSummary,setTierSummary] = useState()
+  const [tierSummaryWithScore,setTierSummaryWithScore] = useState()
+  const [isChat,setIsChat] = useState(false)
+  const [isChanges,setIsChanges] = useState(false)
+  const [isViewEntities,setIsViewEntities] = useState(true)
+  const [isComments,setIsComments] = useState(false)
   const { files } = location.state || {};
+   const [sampleQ,setSampleQ] = useState([])
+   const [commentsList,setCommentsList] = useState([])
+   const [isTierWarning,setIsTierWarning] = useState(false)
+   const [isTierEdit,setIsTierEdit] = useState(false)
+   const [editTierData,setEditTierData] = useState({})
 
   const [contractUrl, setContractUrl] = useState("");
   const [url, setUrl] = useState("");
   const [statusIndex, setStatusIndex] = useState(0);
+  const [historyList,setHistoryList] = useState({})
+  const [summaryList,setSummaryList] = useState({})
+  const [open, setOpen] = useState('0');
+  const [isEdit,setIsEdit] = useState(false)
+  const [editEntitie,setEditEntitie] =useState({
+    key:'',
+    value:'',
+    comment:''
+  })
+
+
+  const toggleSectionAcc = id => {
+    open === id ? setOpen() : setOpen(id);
+  };
+
+// Modal Open for edit Entity
+  const toggleEditEntity =() =>{
+    setIsEdit(!isEdit)
+  }
+
+//Which entity we are editing saving the key and value
+  const editEntities =(key,value) =>{
+    setEditEntitie({
+      ...editEntitie,
+      key,
+      value
+    })
+    setIsEdit(!isEdit)
+  }
+
+
+  const handleEntities =()=>{
+    setIsChat(false)
+    setIsChanges(false)
+    setIsViewEntities(true)
+  }
+
+  const handleChat =()=>{
+    setIsChat(true)
+    setIsChanges(false)
+    setIsViewEntities(false)
+  }
+
+  const handleChanges =()=>{
+     setIsChat(false)
+    setIsChanges(true)
+    setIsViewEntities(false)
+  }
+
+  const handleViewComments =() =>{
+     setIsChat(false)
+    setIsChanges(false)
+    setIsViewEntities(false)
+    setIsComments(true)
+  }
+
+  const fetchCommentList =()=>{
+    request({
+      url:`/icontract/backend/redlining/comments/${contractOffer?.id}`,
+      method:"GET",
+    }).then((res)=>{
+      setCommentsList(res.data)
+    }).catch((err)=>{
+      console.log(err)
+    })
+  }
+
+  useEffect(()=>{
+    if(contractOffer?.id){
+      fetchCommentList()
+    }
+  },[contractOffer?.id])
 
   useEffect(() => {
     if (!isLoading) return;
@@ -503,10 +402,8 @@ function Preview() {
     return () => clearInterval(interval); // cleanup
   }, [isLoading]);
 
-  const toggleTab = (tab) => {
-    if (activeTab !== tab) {
-      setActiveTab(tab);
-    }
+  const toggle = (tab) => {
+    if (activeTab !== tab) setActiveTab(tab);
   };
 
   const toggleAccordion = (id) => {
@@ -530,19 +427,42 @@ function Preview() {
     }
   }, [location]);
 
-  console.log(location)
+
+  const getVersionList = async(contract_number,version)=>{
+   axios
+      .get(`${NodeURL}/icontract/backend/contract_versions/${contract_number}`)
+      .then((res) => {
+        if(res?.data?.success){
+          let filteredVersion = res.data?.versions.filter((li)=>{
+            return li.document_version_number !== Number(version)
+          })
+          setVersionList(filteredVersion);
+          setVersionOpt(filteredVersion.map((li)=>{
+            return {
+              lable: `${li.contract_number} - v${li.document_version_number}`,
+              value: li
+            }
+          }))
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
 
  
-  const fetchContract = async () => {
+  const fetchContract = async (contract_num,version) => {
     axios
-      .get(`https://icontract-backend.srm-tech.com/icontract/backend/AllColumns/${location?.state?.contractNum}/${location?.state?.version}`)
+      .get(`${NodeURL}/icontract/backend/AllColumns/${contract_num}/${version}`)
       .then((res) => {
         setIsLoading(false)
-        console.log(res.data);
         setContractOffer(res?.data?.contracts[0]);
-        setTierSummary(res?.data?.tier_structures)
+        setContractOfferWithScore(res?.data?.contract_details?.basic_info)
+        setTierSummary(res?.data?.contract_details?.tier_structure)
         setTierDataProduct(res?.data?.products)
         setUrl(res?.data?.file_info)
+        dispatch(clearChat())
       })
       .catch((err) => {
         console.log(err);
@@ -552,9 +472,13 @@ function Preview() {
  
   useEffect(() => {
     if (location?.state?.contractNum) {
-      fetchContract();
+      fetchContract(location?.state?.contractNum,location?.state?.version);
+      getVersionList(location?.state?.contractNum,location?.state?.version)
     }
   }, [location?.state?.contractNum]);
+
+
+  
 
 //  const handleExport = () => {
     
@@ -649,7 +573,6 @@ function Preview() {
         list.document_version_number === location?.state?.version
     );
     let nextIndex = currentIndex === 0 ? Number(1) : currentIndex - 1;
-    console.log(contractsData[nextIndex]?.contract_number)
     if(currentIndex!==0){
       navigate('/list/preview',{state:{contractNum:contractsData[nextIndex]?.contract_number,version:contractsData[nextIndex]?.document_version_number}})
     }
@@ -661,91 +584,462 @@ function Preview() {
     let currentIndex = contractsData?.findIndex((list)=>list.contract_number === location?.state?.contractNum &&
         list.document_version_number === location?.state?.version)
     let nextIndex = currentIndex+1
-    console.log(contractsData[nextIndex]?.document_version_number)
     if(nextIndex !== contractsData.length){
       navigate('/list/preview',{state:{contractNum:contractsData[nextIndex]?.contract_number,version:contractsData[nextIndex]?.document_version_number}})
     }
   }
 
+  const handleCompare = (value) => {
+    navigate("/comparison", {
+      state: {
+        contract_number: location?.state?.contractNum,
+        version:location?.state?.version,
+        compareVersion: value?.document_version_number,
+        file:value?.file_info?.file_url,
+        compareFile:url?.file_url,
+        contract_path:value?.document_path
+      },
+    });
+  };
+
+  const handleChangeVerison = (value)=>{
+    fetchContract(value?.contract_number,value?.document_version_number)
+    setVersionOpt([])
+    setVersionList([])
+    getVersionList(value?.contract_number,value?.document_version_number)
+    navigate('/list/preview',{state:{contractNum:value?.contract_number,version:value?.document_version_number}})
+  }
+
+
+   const chatMessage = (msg) => {
+    setIsLoading(true);
+    let question = sendMessage 
+    if(msg){
+      question = msg
+    }
+   
+    if(!question) {
+      return toast.error("Please Enter Something!")
+    }
+    setSendMessage("");
+    dispatch(addMessageByUser(question));
+    axios.post(`${NodeURL}/icontract/chatbot/chat_document/${url?.file_name}`,{user_query:question}).then((res) => {
+        setIsLoading(false);
+        
+        // setMessages(res?.data?.);
+        dispatch(addMessageByBot(res?.data))
+      })
+      .catch((err) => {
+        console.log(err);
+        setSendMessage('')
+      });
+  };
+
+
+  useEffect(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [chatMessages]) 
+
+
+
+  const fetchChangeHistory = (contract,version) =>{
+
+    if(versionList?.length > 0 ){
+      setHistLoading(true)
+      request({
+      url:`/icontract/backend/change_history/${contract}/${Number(version)-1}/${version}`,
+      method:'GET',
+    }).then((res)=>{
+      setHistLoading(false)
+        setHistoryList(res?.change_history)
+        setSummaryList(res?.change_summary)
+    }).catch((err)=>{
+      console.log(err)
+    })
+    }
+  }
+
+  useEffect(()=>{
+    if(location?.state?.contractNum && location?.state?.version){
+      fetchChangeHistory(location?.state?.contractNum,location?.state?.version)
+    }
+  },[location,versionList])
+
+  const saveXmlFile = (xmlData) => {
+  // If xmlData is already a string, skip stringify
+  const xmlString = typeof xmlData === "string" ? xmlData : new XMLSerializer().serializeToString(xmlData);
+
+  const blob = new Blob([xmlString], { type: "application/xml;charset=utf-8" });
+  const filename = url?.file_name?.split('.')[0] || "exported_data";
+  saveAs(blob, `${filename}.xml`); // download file as contract_data.xml
+};
+
+
+  const downloadAsXml =()=>{
+    if(location?.state?.contractNum && location?.state?.version){
+      
+        request({
+      url:'/icontract/backend/export_xml',
+      method:'POST',
+      data:{
+        contract_number:location?.state?.contractNum,
+        document_version_number:String(location?.state?.version)
+      }
+    }).then((res)=>{
+      if(res){
+        saveXmlFile(res)
+      }
+    }).catch((err)=>{
+      console.log(err)
+    })
+    }
+    
+  }
+
+  const toggleSection = () =>{
+    setIsSection(!isSection)
+  }
+
+  
+
+  const updateContract =()=>{
+    const {key,value,comment} = editEntitie
+    request({
+      url:'/icontract/backend/contracts/update-and-comment',
+      method:'POST',
+      data:{
+        id:contractOffer?.id,
+        commented_by:accounts[0]?.name,
+        comment:comment,
+        [key]:value,
+        new_value:value,
+        old_value:contractOffer[key]
+      }
+    }).then((res)=>{
+      toast.success("Entities Updated Successfully")
+      setIsEdit(!isEdit)
+      fetchContract(contractOffer?.contract_number,contractOffer?.document_version_number)
+    }).catch((err)=>{
+      console.log(err)
+      toast.error("Entities not Updated")
+    })
+  }
+
+
+  const handleMouseUp = () => {
+    const iframe = iframeRef.current;
+    const iframeWindow = iframe.contentWindow;
+    const selectedText = iframeWindow.getSelection().toString();
+
+    if (selectedText.trim()) {
+      console.log("Selected text:", selectedText);
+
+    }
+  };
+
+
+  const handleScrollToPage = (pageNum) => {
+    const pageElement = document.getElementById(`page_${pageNum}`);
+    if (pageElement) {
+      pageElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  const editTierLevel =(data)=>{
+    setIsTierWarning(true)
+    setEditTierData(data)
+  }
+
+  const confirmEditTierLevl =()=>{
+    setIsTierEdit(true)
+    setIsTierWarning(false)
+  }
+
+   const handleEditTierData =()=>{
+    const {comment}=editTierData
+    console.log(editTierData)
+    toast.loading('Updating..')
+    request({
+      url:'/icontract/backend/contracts/update-and-comment',
+      method:'POST',
+      data:{
+        id:contractOffer?.id,
+        commented_by:accounts[0]?.name,
+        comment:comment,
+        tier_updates:[
+          editTierData
+        ]
+      }
+    }).then((res)=>{
+      toast.remove()
+      toast.success("Tiers Updated Successfully")
+      setIsTierEdit(!isTierEdit)
+      setEditTierData({})
+      fetchContract(contractOffer?.contract_number,contractOffer?.document_version_number)
+    }).catch((err)=>{
+      console.log(err)
+      toast.error("Entities not Updated")
+    })
+  }
+
   return (
     <Layouts>
+      <style>{`
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 16px 0;
+        }
+        table, th, td {
+          border: 1px solid #ccc;
+        }
+        th, td {
+          padding: 8px 12px;
+          text-align: left;
+        }
+        th {
+          background: #f5f5f5;
+        }
+      `}</style>
       <div className="container-fluid position-relative">
         <div className="doc-nav">
           <div className="head-back">
             <h5 onClick={() => navigate(-1)}>
               <img src={arrow_narrow_left} />
-              {url?.file_name}
+              {url?.file_name}{" "}
+              {versionList?.length > 0 ? (
+                <div className="ms-3">
+                  <UncontrolledDropdown onClick={(e) => e.stopPropagation()}>
+                    <DropdownToggle caret className="contract-upld-btn version">
+                      Version {contractOffer?.document_version_number}
+                    </DropdownToggle>
+                    <DropdownMenu className="">
+                      {versionOpt?.map((contract, idx) => (
+                        <DropdownItem
+                          key={idx}
+                          onClick={() => handleChangeVerison(contract?.value)}
+                        >
+                          {contract.lable}
+                        </DropdownItem>
+                      ))}
+                    </DropdownMenu>
+                  </UncontrolledDropdown>
+                </div>
+              ) : (
+                ""
+              )}
             </h5>
           </div>
           <div className="next-page">
-            <span onClick={()=>prevContract()}>
-              <img src={left_arrow} />
-            </span>
-            <span className="count-page">
-              <span>{contractsData?.findIndex((list)=>list.contract_number === location?.state?.contractNum && list.document_version_number===location?.state?.version ) + 1}</span>/<span>{contractsData?.length}</span>
-            </span>
-            <span onClick={()=>nextContract()}>
-              <img src={right_arrow} />
-            </span>
+            {versionList?.length > 0 ? (
+              <div>
+                <UncontrolledDropdown>
+                  <DropdownToggle caret className="contract-upld-btn">
+                    Compare Versions
+                  </DropdownToggle>
+                  <DropdownMenu className="">
+                    {versionOpt?.map((contract, idx) => (
+                      <DropdownItem
+                        key={idx}
+                        onClick={() => handleCompare(contract?.value)}
+                      >
+                        {contract.lable}
+                      </DropdownItem>
+                    ))}
+                  </DropdownMenu>
+                </UncontrolledDropdown>
+              </div>
+            ) : (
+              ""
+            )}
+
+            {isViewEntities ? (
+              <>
+                {versionList?.length > 0 && (
+                  <button
+                    className="view-entities"
+                    onClick={() => handleChanges()}
+                  >
+                    <img
+                      src={theme === "Dark" ? refreshimg : refreshLightimg}
+                      className="me-2"
+                    />
+                    Contract Changes
+                  </button>
+                )}
+
+                <button className="ask-ai" onClick={() => handleChat()}>
+                  {" "}
+                  <img src={chatAi} style={{ marginRight: "10px" }} />
+                  Ask AI
+                </button>
+              </>
+            ) : isChat ? (
+              <>
+                {versionList?.length > 0 && (
+                  <button
+                    className="view-entities"
+                    onClick={() => handleChanges()}
+                  >
+                    <img
+                      src={theme === "Dark" ? refreshimg : refreshLightimg}
+                      className="me-2"
+                    />
+                    Contract Changes
+                  </button>
+                )}
+                <button
+                  className="view-entities"
+                  onClick={() => handleEntities()}
+                >
+                  View Entities
+                </button>{" "}
+              </>
+            ) : isChanges ? (
+              <>
+                <button
+                  className="view-entities"
+                  onClick={() => handleEntities()}
+                >
+                  View Entities
+                </button>
+                <button className="ask-ai" onClick={() => handleChat()}>
+                  {" "}
+                  <img src={chatAi} style={{ marginRight: "10px" }} />
+                  Ask AI
+                </button>
+              </>
+            ) : isComments ? (
+              <>
+                {versionList?.length > 0 && (
+                  <button
+                    className="view-entities"
+                    onClick={() => handleChanges()}
+                  >
+                    <img
+                      src={theme === "Dark" ? refreshimg : refreshLightimg}
+                      className="me-2"
+                    />
+                    Contract Changes
+                  </button>
+                )}
+                <button
+                  className="view-entities"
+                  onClick={() => handleEntities()}
+                >
+                  View Entities
+                </button>
+                <button className="ask-ai" onClick={() => handleChat()}>
+                  {" "}
+                  <img src={chatAi} style={{ marginRight: "10px" }} />
+                  Ask AI
+                </button>
+              </>
+            ) : (
+              ""
+            )}
+            <div className="me-3">
+              <UncontrolledDropdown>
+                <DropdownToggle
+                  className=""
+                  style={{ background: "transparent", border: "none" }}
+                >
+                  <EllipsisVertical
+                    size={25}
+                    color="#85888E"
+                    style={{ cursor: "pointer" }}
+                  />
+                </DropdownToggle>
+                <DropdownMenu className="">
+                  <DropdownItem onClick={() => handleViewComments()}>
+                    View Comments
+                  </DropdownItem>
+                </DropdownMenu>
+              </UncontrolledDropdown>
+            </div>
+
+            {/* <div className="next-page-nav">
+              <span onClick={() => prevContract()}>
+                <img src={left_arrow} />
+              </span>
+              <span className="count-page">
+                <span>
+                  {contractsData?.findIndex(
+                    (list) =>
+                      list.contract_number === location?.state?.contractNum &&
+                      list.document_version_number === location?.state?.version
+                  ) + 1}
+                </span>
+                /<span>{contractsData?.length}</span>
+              </span>
+              <span onClick={() => nextContract()}>
+                <img src={right_arrow} />
+              </span>
+            </div> */}
           </div>
         </div>
         <Row>
           {/* Left Side: File Preview */}
           <Col lg="8" className="left-nav">
-            <iframe
-            id="pdf-preview"
-              src={url ? `${url?.file_url}` : ''}
-              width={"100%"}
-              height={"900px"}
-              style={{ backgroundColor: "white" }}
-            ></iframe>
-            {/* <Nav tabs className="pt-2 preview-nav">
-              <NavItem>
-                <NavLink
-                  className={classnames({
-                    active: activeTab === "1",
-                    "text-white": true,
-                  })}
-                  onClick={() => toggleTab("1")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Contract - SRM Pharma Contract
-                </NavLink>
-              </NavItem>
-              <NavItem>
-                <NavLink
-                  className={classnames({
-                    active: activeTab === "2",
-                    "text-white": true,
-                  })}
-                  onClick={() => toggleTab("2")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Price- Product Pricing Table
-                </NavLink>
-              </NavItem>
-            </Nav>
-
-            <TabContent
-              activeTab={activeTab}
-              className="bg-white p-4"
-              style={{ minHeight: "100vh", overflow: "auto" }}
-            >
-              <TabPane tabId="1">
-                <iframe
-                  src={contractUrl ? `${contractUrl}` : contractPdf}
-                  width={"100%"}
-                  height={"900px"}
-                ></iframe>
-              </TabPane>
-              <TabPane tabId="2">
-                <iframe
-                  src={priceUrl ? `${priceUrl}` : pricingPdf}
-                  width={"100%"}
-                  height={"900px"}
-                ></iframe>
-              </TabPane>
-            </TabContent> */}
+            <div className={`pdf-view-url ${isSection ? "pdf-resize" : ""}`}>
+              {/* <div
+                className="layout-section"
+                title="Section"
+                onClick={() => toggleSection()}
+              >
+                <img src={layoutLeft} />
+              </div> */}
+              {url?.file_url && (
+                <PdfViewerWithPopup
+                  file={url?.file_url}
+                  filename={url?.file_name}
+                  contract={contractOffer}
+                  fetchList={fetchCommentList}
+                  commentList={commentsList}
+                />
+              )}
+              {/* <iframe
+                ref={iframeRef}
+                src={url?.file_url}
+                width={"100%"}
+                height={"900px"}
+                // style={{ border: "1px solid #ccc" }}
+              /> */}
+              <div className={`section-list-layout ${isSection ? "" : "hide"}`}>
+                <div>
+                  <div className="layout-header">
+                    <div className="head">Sections</div>
+                    <div className="off-btn" onClick={() => toggleSection()}>
+                      <img src={layoutLeft} />
+                    </div>
+                  </div>
+                  <div className="section-list-acc">
+                    <Accordion
+                      open={open}
+                      toggle={toggleSectionAcc}
+                      className="custom-accordion"
+                    >
+                      {sections.map((section, idx) => (
+                        <AccordionItem key={idx}>
+                          <AccordionHeader targetId={`${idx + 1}`}>
+                            {truncate(section?.title, { length: "29" })}
+                          </AccordionHeader>
+                          <AccordionBody accordionId={`${idx + 1}`}>
+                            {section.subsections.length > 0 && (
+                              <ul className="subsection-list">
+                                {section.subsections.map((sub, subIdx) => (
+                                  <li key={subIdx}>{sub}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </AccordionBody>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </div>
+                </div>
+              </div>
+            </div>
           </Col>
 
           {/* Right Side: Contract Entities */}
@@ -753,281 +1047,1761 @@ function Preview() {
             lg="4"
             className="d-flex flex-column justify-content-between p-0 right-tab"
           >
-            <div className="prev-acc-box">
-              <h6 className="acc-head">Contract Entities</h6>
-              {isLoading ? (
+            <>
+              {isChat ? (
                 <>
-                  <div className="container my-5 p-0 loading-contract">
-                    <div className="w-50 m-auto text-center">
-                      <img src={theme==='Dark' ?loadingImg: lightLoading} className="loadingimg" />
-                      <h5 className="loading-info">
-                        <i>{loadingStatus[statusIndex]}</i>
-                      </h5>
+                  <div className="prev-acc-box preview">
+                    <h6 className="acc-head">Ask AI Assistant</h6>
+                    {chatMessages.length <= 0 ? (
+                      <div className="initial-chat p-4 preview">
+                        <h1 className="chat-user">
+                          Hi, {accounts[0]?.name ?? "User"}!
+                        </h1>
+                        <h1 className="chat-help">How can I help you?</h1>
+                        <div className="initial-question">
+                          <div className="row g-2">
+                            {sampleQ?.length > 0 &&
+                              sampleQ?.map((que) => {
+                                return (
+                                  <div className="col-4">
+                                    <div className="q-box">
+                                      <h6>{que}</h6>
+                                      <div className="text-end ex-link">
+                                        <img
+                                          src={externalLink}
+                                          onClick={() => chatMessage(que)}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="preview-chat-main-box">
+                          {chatMessages?.map((msg) => {
+                            return (
+                              <>
+                                <div className="preview-chat-box">
+                                  {msg.role === "user" ? (
+                                    <div className="chat-right">
+                                      <div className="chat-msg right">
+                                        {/* <div className="by">You</div> */}
+                                        <div className="msg right">
+                                          {msg.message}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : msg.role === "bot" ? (
+                                    <div className="chat-left">
+                                      <div className="logo-round">
+                                        <img src={logo} className="srm-bot" />
+                                      </div>
+                                      <div className="chat-msg ">
+                                        <div className="by">SRM Bot</div>
+                                        <div className="msg">
+                                          <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                          >
+                                            {msg?.message?.llm_response}
+                                          </ReactMarkdown>
+                                          {/* {renderBulletPoints()} */}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    ""
+                                  )}
+                                </div>
+                              </>
+                            );
+                          })}
+                          <>
+                            {isLoading ? (
+                              <>
+                                <div className="chat-left">
+                                  <div className="logo-round">
+                                    <img src={logo} className="srm-bot" />
+                                  </div>
+                                  <div className="chat-msg ">
+                                    <div className="by">SRM Bot</div>
+                                    <div>
+                                      <div class="loader">
+                                        <li class="ball"></li>
+                                        <li class="ball"></li>
+                                        <li class="ball"></li>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              ""
+                            )}
+                            <div ref={chatEndRef} />
+                          </>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="p-3">
+                    <div className="chat-search preview">
+                      <input
+                        className="chat-search-input preview"
+                        value={sendMessage}
+                        onChange={(e) => {
+                          setSendMessage(e.target.value);
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && chatMessage()}
+                      />
+                      <div>
+                        <button
+                          className="chat-send-btn"
+                          onClick={() => chatMessage()}
+                        ></button>
+                      </div>
                     </div>
                   </div>
                 </>
-              ) : (
-                <div className="preview-acc-box">
-                  <Accordion
-                    open={accordionOpen}
-                    toggle={toggleAccordion}
-                    flush
-                    className="preview-acc"
-                  >
-                    <AccordionItem>
-                      <AccordionHeader targetId={1}>
-                        Contract Offer
-                      </AccordionHeader>
-                      <AccordionBody accordionId={1}>
-                        <ul className="acc-list-data">
-                          {Object.entries(contractOffer).map(
-                            ([key, value], index) => (
-                                key !== "id" && key !=="created_at" && key !=="updated_at" && key !== "adjust_by" &&
-                                      key !== "category_pricing" &&
-                                      key !== "price_list_name" &&
-                                      key !== "pricing_method" ?
-                              <li key={index}>
-                                <span className="text-capitalize">{key.replace(/_/g, " ")}: </span>
-                                 {String(value)}
-                              </li> :''
-                            )
-                          )}
-                        </ul>
-                      </AccordionBody>
-                    </AccordionItem>
-                    <AccordionItem>
-                      <AccordionHeader targetId={2}>
-                        Product Group
-                      </AccordionHeader>
-                      <AccordionBody accordionId={2}>
-                        <ul className="acc-list-data">
-                          {Object.entries(contractOffer).map(
-                            ([key, value], index) =>
-                              key === "adjust_by" ||
-                              key === "category_pricing" ||
-                              key === "price_list_name" ||
-                              key === "pricing_method" ||
-                              key === "number_of_tiers" ? (
-                                <li key={index}>
-                                  <span className="text-capitalize">
-                                    {key.replace(/_/g, " ")}:
-                                  </span>{" "}
-                                  {String(value)}
-                                </li>
-                              ) : (
-                                ""
-                              )
-                          )}
-                        </ul>
-                      </AccordionBody>
-                    </AccordionItem>
+              ) : isChanges ? (
+                <>
+                  <div className="prev-acc-box preview">
+                    <div className="history-container">
+                      {/* Tabs */}
+                         <Nav tabs className="history-tabs">
+                        <NavItem>
+                          <NavLink
+                            className={classnames({
+                              active: activeTab === "1",
+                            })}
+                            onClick={() => toggle("1")}
+                          >
+                            Change History
+                          </NavLink>
+                        </NavItem>
+                        <NavItem>
+                          <NavLink
+                            className={classnames({
+                              active: activeTab === "2",
+                            })}
+                            onClick={() => toggle("2")}
+                          >
+                            Change Summary
+                          </NavLink>
+                        </NavItem>
+                      </Nav>
+                      
+                     
 
-                    <AccordionItem>
-                      <AccordionHeader targetId={3} className="tiered-head">
-                        Tiered Summary
-                      </AccordionHeader>
-                      <AccordionBody accordionId={3} className="tiered-body">
-                        {tierSummary?.map((list, idx) => {
-                          return (
-                            <ul className="acc-list-data tiered">
-                              <li className="hdr pt-3">
-                                <h6>
-                                  Tier Level: 
-                                  <span className="cnt"> 0{list?.tier_level}</span>{" "}
-                                </h6>
-                              </li>
-                              <li className="hdr">
-                                <div className="d-flex justify-content-between text-start">
-                                  <div className="ndc-num ndc-bg">
-                                    <span className="tier-span">
-                                      Purchase Volume Min
-                                    </span>
-                                    <h5>{list.volume_min ?? "-"}</h5>
-                                  </div>
-                                  <div className="wac-price ndc-bg">
-                                    <span className="tier-span">
-                                      Purchase Volume Max
-                                    </span>
-                                    <h5 className="">
-                                      {list.volume_max ?? "-"}
-                                    </h5>
-                                  </div>
-                                </div>
-                              </li>
-                              <li className="split-li-sum">
-                                <div className="d-flex justify-content-around">
-                                  <div className="ndc-num">
-                                    <h5>
-                                      <span className="tier-span">
-                                        Price Discount (%)
-                                      </span>{" "}
-                                    </h5>
-                                    <h5>{list.discount_percentage}%</h5>
-                                  </div>
-                                  <div className="ndc-num">
-                                    <h5>
-                                      <span className="tier-span">
-                                        Admin Fees(%)
-                                      </span>{" "}
-                                    </h5>
-                                    <h5>
-                                      {list.admin_fee_percentage}%
-                                    </h5>
-                                  </div>
-                                  <div className="ndc-num">
-                                    <h5>
-                                      <span className="tier-span">
-                                        Rebate(%)
-                                      </span>{" "}
-                                    </h5>
-                                    <h5>{list.rebate_percentage}%</h5>
-                                  </div>
-                                </div>
-                              </li>
-                              {/* <li className="split-li">
-                                <div className="d-flex justify-content-between">
-                                  <div className="ndc-num">
-                                    <h5>
-                                      <span className="tier-span">
-                                        Administrative Fees Percentage :
-                                      </span>{" "}
-                                      {list.administrative_fee_percentage}%
-                                    </h5>
-                                  </div>
-                                </div>
-                              </li> */}
-                              {/* <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 3</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 20%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $156</h6>
-                                </div>
+                      {/* Tab Content */}
+                      {histLoading ? (
+                        <>
+                          <div className="container my-5 p-0 loading-contract">
+                            <div className="w-50 m-auto text-center">
+                              <img
+                                src={
+                                  theme === "Dark" ? loadingImg : lightLoading
+                                }
+                                className="loadingimg"
+                              />
+                              <h5 className="loading-info">
+                                <i>{loadingStatus[statusIndex]}</i>
+                              </h5>
                             </div>
-                          </li> */}
-                            </ul>
-                          );
-                        })}
-                        {/* <ul className="acc-list-data tiered">
-                          <li className="hdr">
-                            <div className="d-flex justify-content-between">
-                                <div className="ndc-num">
-                                    <span>NDC Number</span>
-                                    <h5>65483-1021-30</h5>
-                                </div>
-                                <div className="wac-price">
-                                    <span>WAC Price</span>
-                                    <h5 className="text-end">$195</h5>
-                                </div>
+                          </div>
+                        </>
+                      ) : (
+                        <TabContent
+                          activeTab={activeTab}
+                          className="history-content"
+                        >
+                          <TabPane tabId="1">
+                            {/* Timeline */}
+                            <div className="timeline">
+                              <div className="timeline-date">
+                                {historyList?.upload_timestamp && (
+                                  <>
+                                    {isToday(
+                                      new Date(historyList?.upload_timestamp)
+                                    )
+                                      ? "Today"
+                                      : ""}
+                                  </>
+                                )}
+                                ,{" "}
+                                {historyList?.upload_timestamp &&
+                                  format(
+                                    new Date(historyList?.upload_timestamp),
+                                    "dd-MMM-yyyy"
+                                  )}
+                              </div>
+                              {historyList?.change_history?.length > 0 && (
+                                <>
+                                  {historyList?.change_history?.map((chng) => {
+                                    return (
+                                      <div className="timeline-item">
+                                        <div className="timeline-dot" />
+                                        <div className="timeline-time">
+                                          {historyList?.upload_timestamp &&
+                                            format(
+                                              new Date(
+                                                historyList?.upload_timestamp
+                                              ),
+                                              "hh:mm a"
+                                            )}{" "}
+                                          | Edited by {historyList?.modified_by}
+                                        </div>
+                                        <div className="timeline-card">
+                                          <h4>{chng?.type}</h4>
+                                          <p
+                                            className=""
+                                            dangerouslySetInnerHTML={{
+                                              __html: chng?.description,
+                                            }}
+                                          ></p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </>
+                              )}
                             </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 1</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 10%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $175.5</h6>
-                                </div>
-                            </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 2</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 15%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $165.8</h6>
-                                </div>
-                            </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 3</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 20%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $156</h6>
-                                </div>
-                            </div>
-                          </li>
-                        </ul>
-                        <ul className="acc-list-data tiered">
-                          <li className="hdr">
-                            <div className="d-flex justify-content-between">
-                                <div className="ndc-num">
-                                    <span>NDC Number</span>
-                                    <h5>65483-2041-60</h5>
-                                </div>
-                                <div className="wac-price">
-                                    <span>WAC Price</span>
-                                    <h5 className="text-end">$425</h5>
-                                </div>
-                            </div>
-                          </li>
-                        </ul> */}
-                      </AccordionBody>
-                    </AccordionItem>
+                          </TabPane>
 
-                    <AccordionItem>
-                      <AccordionHeader className="tiered-head" targetId={4}>
-                        Tiered LI
-                      </AccordionHeader>
-                      <AccordionBody accordionId={4} className="tiered-body">
-                        {tierDataProduct?.map((list) => {
-                          return (
-                            <ul className="acc-list-data tiered">
-                              <li className="hdr pt-3">
-                                <div className="d-flex justify-content-between">
-                                  <div className="ndc-num">
-                                    <span>NDC Number</span>
-                                    <h5>{list?.ndc_number}</h5>
-                                  </div>
-                                  <div className="wac-price text-end">
-                                    <span>WAC Price</span>
-                                    <h5 className="text-end">
-                                      {list?.wac_price}
-                                    </h5>
-                                  </div>
+                          <TabPane tabId="2">
+                            <div className="summary p-3 ">
+                              {historyList?.change_history?.length > 0 && (
+                                <div>
+                                  <ReactMarkdown>
+                                    {summaryList?.llm_generated_histories.replace(
+                                      /•/g,
+                                      "-"
+                                    )}
+                                  </ReactMarkdown>
                                 </div>
-                              </li>
-                              {list?.tiers?.map((tierData) => {
+                              )}
+                            </div>
+                          </TabPane>
+                        </TabContent>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : isViewEntities ? (
+                <>
+                  <div className="prev-acc-box">
+                    <h6 className="acc-head">Contract Entities</h6>
+                    {isLoading ? (
+                      <>
+                        <div className="container my-5 p-0 loading-contract">
+                          <div className="w-50 m-auto text-center">
+                            <img
+                              src={theme === "Dark" ? loadingImg : lightLoading}
+                              className="loadingimg"
+                            />
+                            <h5 className="loading-info">
+                              <i>{loadingStatus[statusIndex]}</i>
+                            </h5>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="preview-acc-box">
+                        <Accordion
+                          open={accordionOpen}
+                          toggle={toggleAccordion}
+                          flush
+                          className="preview-acc"
+                        >
+                          <AccordionItem>
+                            <AccordionHeader targetId={1}>
+                              Contract Offer
+                            </AccordionHeader>
+                            <AccordionBody accordionId={1}>
+                              <ul className="acc-list-data">
+                                {/* {Object.entries(contractOffer).map(
+                                  ([key, value], index) =>
+                                    key !== "id" &&
+                                    key !== "created_at" &&
+                                    key !== "Updated_at" &&
+                                    key !== "adjust_by" &&
+                                    key !== "category_pricing" &&
+                                    key !== "price_list_name" &&
+                                    key !== "pricing_method" ? (
+                                      <li
+                                        key={index}
+                                        className="px-2 contract-offer"
+                                      >
+                                        <div className="me-2">
+                                          <span className="text-capitalize">
+                                            {key.replace(/_/g, " ")}:{" "}
+                                          </span>
+                                          {String(value)}
+                                          <span className="ms-2">
+                                            <CircleCheckBig
+                                              size={18}
+                                              color="#17B26A"
+                                            />
+                                            <CircleAlert
+                                              size={18}
+                                              color="#F79009"
+                                            />
+                                            <TriangleAlert
+                                              size={18}
+                                              color="#F04438"
+                                            />
+                                          </span>
+                                        </div>
+                                        <div className=" edit">
+                                          <Pencil
+                                            size={18}
+                                            onClick={() =>
+                                              editEntities(key, value)
+                                            }
+                                          />
+                                        </div>
+                                      </li>
+                                    ) : (
+                                      ""
+                                    )
+                                )} */}
+                                {Object.entries(contractOfferWithScore)?.map(
+                                  ([key, obj], index) =>
+                                    key !== "id" &&
+                                    key !== "created_at" &&
+                                    key !== "updated_at" &&
+                                    key !== "adjust_by" &&
+                                    key !== "category_pricing" &&
+                                    key !== "price_list_name" &&
+                                    key !== "pricing_method" &&
+                                    key !== "document_path" &&
+                                    key !== "number_of_tiers" ? (
+                                      <li
+                                        key={index}
+                                        className="px-2 contract-offer"
+                                      >
+                                        <div className="me-2">
+                                          <span className="text-capitalize">
+                                            {key?.replace(/_/g, " ")}:{" "}
+                                          </span>
+                                          {key==='program_only'? obj.value===0 ? 'FALSE' :'TRUE' :String(obj?.value)}
+                                          {
+                                            key !== "owner" &&
+                                            key !=="document_status" &&
+                                            key !=="author" &&  <span className="ms-2">
+                                            {obj?.confidence_category ===
+                                              "High" && (
+                                              <>
+                                                {/* wrap icon in a real DOM element with id */}
+                                                <span
+                                                  id={`tooltip-${index}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleCheckBig
+                                                    size={18}
+                                                    color="#17B26A"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-${index}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#17B26A" }}
+                                                  >
+                                                    High
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {obj?.confidence_category ===
+                                              "Medium" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-${index}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleAlert
+                                                    size={18}
+                                                    color="#F79009"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-${index}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F79009" }}
+                                                  >
+                                                    Medium
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {obj?.confidence_category ===
+                                              "Low" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-${index}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-${index}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F04438" }}
+                                                  >
+                                                    Low
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {obj?.confidence_category ===
+                                              null && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-${index}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-${index}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{
+                                                      color: "#F04438",
+                                                      fontStyle: "italic",
+                                                    }}
+                                                  >
+                                                    N/A
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+                                          </span>
+                                          }
+                                         
+                                        </div>
+
+                                        <div className=" edit">
+                                          {key !== "author" &&
+                                          key !== "document_status" &&
+                                          key !== "document_version_number" &&
+                                          key !==
+                                            "document_version_creation_date" &&
+                                          key !== "owner" &&
+                                          key !== "source_type" ? (
+                                            <Pencil
+                                              size={18}
+                                              onClick={() =>
+                                                editEntities(key, obj?.value)
+                                              }
+                                            />
+                                          ) : (
+                                            ""
+                                          )}
+                                        </div>
+                                      </li>
+                                    ) : (
+                                      ""
+                                    )
+                                )}
+                              </ul>
+                            </AccordionBody>
+                          </AccordionItem>
+                          <AccordionItem>
+                            <AccordionHeader targetId={2}>
+                              Product Group
+                            </AccordionHeader>
+                            <AccordionBody accordionId={2}>
+                              <ul className="acc-list-data">
+                                {/* {Object.entries(contractOffer).map(
+                                  ([key, value], index) =>
+                                    key === "adjust_by" ||
+                                    key === "category_pricing" ||
+                                    key === "price_list_name" ||
+                                    key === "pricing_method" ||
+                                    key === "number_of_tiers" ? (
+                                      <li
+                                        key={index}
+                                        className="px-2 product-group"
+                                      >
+                                        <div className="me-2">
+                                          <span className="text-capitalize">
+                                            {key.replace(/_/g, " ")}:
+                                          </span>{" "}
+                                          {String(value)}
+                                          <span className="ms-2">
+                                            <CircleCheckBig
+                                              size={18}
+                                              color="#17B26A"
+                                            />
+                                            <CircleAlert
+                                              size={18}
+                                              color="#F79009"
+                                            />
+                                            <TriangleAlert
+                                              size={18}
+                                              color="#F04438"
+                                            />
+                                          </span>
+                                        </div>
+                                        <div className=" edit">
+                                          <Pencil
+                                            size={18}
+                                            onClick={() =>
+                                              editEntities(key, value)
+                                            }
+                                          />
+                                        </div>
+                                      </li>
+                                    ) : (
+                                      ""
+                                    )
+                                )} */}
+                                {Object.entries(contractOfferWithScore).map(
+                                  ([key, obj], index) =>
+                                    key === "adjust_by" ||
+                                    key === "category_pricing" ||
+                                    key === "price_list_name" ||
+                                    key === "pricing_method" ? (
+                                      <li
+                                        key={index}
+                                        className="px-2 product-group"
+                                      >
+                                        <div className="me-2">
+                                          <span className="text-capitalize">
+                                            {key.replace(/_/g, " ")}:
+                                          </span>{" "}
+                                          {String(obj?.value)}
+                                          <span className="ms-2">
+                                            {obj?.confidence_category ===
+                                              "High" && (
+                                              <>
+                                                {/* wrap icon in a real DOM element with id */}
+                                                <span
+                                                  id={`tooltip-product-${index}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleCheckBig
+                                                    size={18}
+                                                    color="#17B26A"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-product-${index}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#17B26A" }}
+                                                  >
+                                                    High
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {obj?.confidence_category ===
+                                              "Medium" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-product-${index}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleAlert
+                                                    size={18}
+                                                    color="#F79009"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-product-${index}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F79009" }}
+                                                  >
+                                                    Medium
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {obj?.confidence_category ===
+                                              "Low" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-product-${index}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-product-${index}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F04438" }}
+                                                  >
+                                                    Low
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {obj?.confidence_category ===
+                                              null && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-product-${index}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-product-${index}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{
+                                                      color: "#F04438",
+                                                      fontStyle: "italic",
+                                                    }}
+                                                  >
+                                                    N/A
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+                                          </span>
+                                        </div>
+                                        <div className=" edit">
+                                          <Pencil
+                                            size={18}
+                                            onClick={() =>
+                                              editEntities(key, obj?.value)
+                                            }
+                                          />
+                                        </div>
+                                      </li>
+                                    ) : (
+                                      ""
+                                    )
+                                )}
+                              </ul>
+                            </AccordionBody>
+                          </AccordionItem>
+
+                          <AccordionItem>
+                            <AccordionHeader
+                              targetId={3}
+                              className="tiered-head"
+                            >
+                              Tiered Summary
+                            </AccordionHeader>
+                            <AccordionBody
+                              accordionId={3}
+                              className="tiered-body"
+                            >
+                              <div
+                                className=""
+                                style={{
+                                  color: "var(--text)",
+                                  padding: "16px",
+                                }}
+                              >
+                                Number of Tiers :{" "}
+                                {contractOfferWithScore?.number_of_tiers?.value}
+                                <span className="ms-2">
+                                  {contractOfferWithScore?.number_of_tiers
+                                    ?.confidence_category === "High" && (
+                                    <>
+                                      {/* wrap icon in a real DOM element with id */}
+                                      <span
+                                        id={`tooltip-tier`}
+                                        style={{
+                                          display: "inline-block",
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        <CircleCheckBig
+                                          size={18}
+                                          color="#17B26A"
+                                        />
+                                      </span>
+
+                                      <UncontrolledTooltip
+                                        target={`tooltip-tier`}
+                                        placement="top"
+                                        style={{
+                                          border: "2px",
+                                          borderStyle: "solid",
+                                          borderColor: "#262A33",
+                                          fontSize: "14px",
+                                        }}
+                                      >
+                                        Confidence Score :{" "}
+                                        <span style={{ color: "#17B26A" }}>
+                                          High
+                                        </span>
+                                      </UncontrolledTooltip>
+                                    </>
+                                  )}
+
+                                  {contractOfferWithScore?.number_of_tiers
+                                    ?.confidence_category === "Medium" && (
+                                    <>
+                                      <span
+                                        id={`tooltip-tier`}
+                                        style={{
+                                          display: "inline-block",
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        <CircleAlert
+                                          size={18}
+                                          color="#F79009"
+                                        />
+                                      </span>
+
+                                      <UncontrolledTooltip
+                                        target={`tooltip-tier`}
+                                        placement="top"
+                                        style={{
+                                          border: "2px",
+                                          borderStyle: "solid",
+                                          borderColor: "#262A33",
+                                          fontSize: "14px",
+                                        }}
+                                      >
+                                        Confidence Score :{" "}
+                                        <span style={{ color: "#F79009" }}>
+                                          Medium
+                                        </span>
+                                      </UncontrolledTooltip>
+                                    </>
+                                  )}
+
+                                  {contractOfferWithScore?.number_of_tiers
+                                    ?.confidence_category === "Low" && (
+                                    <>
+                                      <span
+                                        id={`tooltip-tier`}
+                                        style={{
+                                          display: "inline-block",
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        <TriangleAlert
+                                          size={18}
+                                          color="#F04438"
+                                        />
+                                      </span>
+
+                                      <UncontrolledTooltip
+                                        target={`tooltip-tier`}
+                                        placement="top"
+                                        style={{
+                                          border: "2px",
+                                          borderStyle: "solid",
+                                          borderColor: "#262A33",
+                                          fontSize: "14px",
+                                        }}
+                                      >
+                                        Confidence Score :{" "}
+                                        <span style={{ color: "#F04438" }}>
+                                          Low
+                                        </span>
+                                      </UncontrolledTooltip>
+                                    </>
+                                  )}
+                                </span>
+                              </div>
+                              {tierSummary?.map((list, idx) => {
                                 return (
-                                  <li className="split-li">
-                                    <div className="d-flex align-items-center justify-content-between tier-split">
-                                      <div className="">
-                                        <h6>Tier {tierData?.tier}</h6>
-                                      </div>
-                                      <div className="">
+                                  <ul className="acc-list-data tiered">
+                                    <li className="hdr pt-3">
+                                      <div className="d-flex justify-content-between">
                                         <h6>
-                                          <span>Discount:</span>{" "}
-                                          {tierData?.discount}
+                                          Tier Level:
+                                          <span className="cnt">
+                                            {" "}
+                                            0{list?.tier_level}
+                                          </span>{" "}
+
                                         </h6>
+                                        <div>
+                                          <Pencil
+                                            size={18}
+                                            style={{ cursor: "pointer" }}
+                                            onClick={() => editTierLevel(list)}
+                                          />
+                                        </div>
                                       </div>
-                                      <div>
-                                        <h6>
-                                          <span>Final Price:</span>{" "}
-                                          {tierData?.final_price}
-                                        </h6>
+                                    </li>
+                                    <li className="hdr">
+                                      <div className="d-flex justify-content-between text-start">
+                                        <div className="ndc-num ndc-bg">
+                                          <span className="tier-span">
+                                            Purchase Volume Min
+                                          </span>
+                                          <h5>{list.volume_min ?? "-"}
+                                             <span className="ms-2">
+                                            {list?.volume_min_confidence_category ===
+                                              "High" && (
+                                              <>
+                                                {/* wrap icon in a real DOM element with id */}
+                                                <span
+                                                  id={`tooltip-summary-vmin-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleCheckBig
+                                                    size={18}
+                                                    color="#17B26A"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-vmin-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#17B26A" }}
+                                                  >
+                                                    High
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.volume_min_confidence_category ===
+                                              "Medium" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-vmin-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleAlert
+                                                    size={18}
+                                                    color="#F79009"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-vmin-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F79009" }}
+                                                  >
+                                                    Medium
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.volume_min_confidence_category ===
+                                              "Low" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-vmin-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-vmin-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F04438" }}
+                                                  >
+                                                    Low
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.volume_min_confidence_category ===
+                                              null && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-vmin-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-vmin-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{
+                                                      color: "#F04438",
+                                                      fontStyle: "italic",
+                                                    }}
+                                                  >
+                                                    N/A
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+                                          </span></h5>
+                                        </div>
+                                        <div className="wac-price ndc-bg">
+                                          <span className="tier-span">
+                                            Purchase Volume Max
+                                          </span>
+                                          <h5 className="">
+                                            {list.volume_max ?? "-"}
+                                             <span className="ms-2">
+                                            {list?.volume_max_confidence_category ===
+                                              "High" && (
+                                              <>
+                                                {/* wrap icon in a real DOM element with id */}
+                                                <span
+                                                  id={`tooltip-summary-vmax-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleCheckBig
+                                                    size={18}
+                                                    color="#17B26A"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-vmax-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#17B26A" }}
+                                                  >
+                                                    High
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.volume_max_confidence_category ===
+                                              "Medium" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-vmax-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleAlert
+                                                    size={18}
+                                                    color="#F79009"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-vmax-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F79009" }}
+                                                  >
+                                                    Medium
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.volume_max_confidence_category ===
+                                              "Low" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-vmax-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-vmax-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F04438" }}
+                                                  >
+                                                    Low
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.volume_max_confidence_category ===
+                                              null && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-vmax-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-vmax-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{
+                                                      color: "#F04438",
+                                                      fontStyle: "italic",
+                                                    }}
+                                                  >
+                                                    N/A
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+                                          </span>
+                                          </h5>
+                                        </div>
                                       </div>
-                                    </div>
-                                  </li>
+                                    </li>
+                                    <li className="split-li-sum">
+                                      <div className="d-flex justify-content-around">
+                                        <div className="ndc-num">
+                                          <h5>
+                                            <span className="tier-span">
+                                              Price Discount (%)
+                                            </span>{" "}
+                                          </h5>
+                                          <h5>{list.discount_percentage}%
+                                             <span className="ms-2">
+                                            {list?.volume_min_confidence_category ===
+                                              "High" && (
+                                              <>
+                                                {/* wrap icon in a real DOM element with id */}
+                                                <span
+                                                  id={`tooltip-summary-dis-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleCheckBig
+                                                    size={18}
+                                                    color="#17B26A"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-dis-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#17B26A" }}
+                                                  >
+                                                    High
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.volume_min_confidence_category ===
+                                              "Medium" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-dis-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleAlert
+                                                    size={18}
+                                                    color="#F79009"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-dis-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F79009" }}
+                                                  >
+                                                    Medium
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.volume_min_confidence_category ===
+                                              "Low" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-dis-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-dis-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F04438" }}
+                                                  >
+                                                    Low
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.volume_min_confidence_category ===
+                                              null && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-dis-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-dis-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{
+                                                      color: "#F04438",
+                                                      fontStyle: "italic",
+                                                    }}
+                                                  >
+                                                    N/A
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+                                          </span>
+                                          </h5>
+                                        </div>
+                                        <div className="ndc-num">
+                                          <h5>
+                                            <span className="tier-span">
+                                              Admin Fees(%)
+                                            </span>{" "}
+                                          </h5>
+                                          <h5>{list.admin_fee_percentage}%
+                                            <span className="ms-2">
+                                            {list?.discount_percentage_confidence_category ===
+                                              "High" && (
+                                              <>
+                                                {/* wrap icon in a real DOM element with id */}
+                                                <span
+                                                  id={`tooltip-summary-adm-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleCheckBig
+                                                    size={18}
+                                                    color="#17B26A"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-adm-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#17B26A" }}
+                                                  >
+                                                    High
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.discount_percentage_confidence_category ===
+                                              "Medium" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-adm-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleAlert
+                                                    size={18}
+                                                    color="#F79009"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-adm-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F79009" }}
+                                                  >
+                                                    Medium
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.discount_percentage_confidence_category ===
+                                              "Low" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-adm-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-adm-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F04438" }}
+                                                  >
+                                                    Low
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.discount_percentage_confidence_category ===
+                                              null && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-adm-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-adm-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{
+                                                      color: "#F04438",
+                                                      fontStyle: "italic",
+                                                    }}
+                                                  >
+                                                    N/A
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+                                          </span>
+                                          </h5>
+                                        </div>
+                                        <div className="ndc-num">
+                                          <h5>
+                                            <span className="tier-span">
+                                              Rebate(%)
+                                            </span>{" "}
+                                          </h5>
+                                          <h5>{list.rebate_percentage}%
+                                            <span className="ms-2">
+                                            {list?.rebate_percentage_confidence_category ===
+                                              "High" && (
+                                              <>
+                                                {/* wrap icon in a real DOM element with id */}
+                                                <span
+                                                  id={`tooltip-summary-rb-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleCheckBig
+                                                    size={18}
+                                                    color="#17B26A"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-rb-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#17B26A" }}
+                                                  >
+                                                    High
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.rebate_percentage_confidence_category ===
+                                              "Medium" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-rb-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <CircleAlert
+                                                    size={18}
+                                                    color="#F79009"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-rb-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F79009" }}
+                                                  >
+                                                    Medium
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.rebate_percentage_confidence_category ===
+                                              "Low" && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-rb-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-rb-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{ color: "#F04438" }}
+                                                  >
+                                                    Low
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+
+                                            {list?.rebate_percentage_confidence_category ===
+                                              null && (
+                                              <>
+                                                <span
+                                                  id={`tooltip-summary-rb-${idx}`}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    cursor: "pointer",
+                                                  }}
+                                                >
+                                                  <TriangleAlert
+                                                    size={18}
+                                                    color="#F04438"
+                                                  />
+                                                </span>
+
+                                                <UncontrolledTooltip
+                                                  target={`tooltip-summary-rb-${idx}`}
+                                                  placement="top"
+                                                  style={{
+                                                    border: "2px",
+                                                    borderStyle: "solid",
+                                                    borderColor: "#262A33",
+                                                    fontSize: "14px",
+                                                  }}
+                                                >
+                                                  Confidence Score :{" "}
+                                                  <span
+                                                    style={{
+                                                      color: "#F04438",
+                                                      fontStyle: "italic",
+                                                    }}
+                                                  >
+                                                    N/A
+                                                  </span>
+                                                </UncontrolledTooltip>
+                                              </>
+                                            )}
+                                          </span>
+                                          </h5>
+                                        </div>
+                                      </div>
+                                    </li>
+                                  </ul>
                                 );
                               })}
-                              {/* <li className="split-li">
+                            </AccordionBody>
+                          </AccordionItem>
+
+                          <AccordionItem>
+                            <AccordionHeader
+                              className="tiered-head"
+                              targetId={4}
+                            >
+                              Tiered LI
+                            </AccordionHeader>
+                            <AccordionBody
+                              accordionId={4}
+                              className="tiered-body"
+                            >
+                              {tierDataProduct?.map((list) => {
+                                return (
+                                  <ul className="acc-list-data tiered">
+                                    <li className="hdr pt-3">
+                                      <div className="d-flex justify-content-between">
+                                        <div className="ndc-num">
+                                          <span>NDC Number</span>
+                                          <h5>{list?.ndc_number}</h5>
+                                        </div>
+                                        <div className="wac-price text-end">
+                                          <span>WAC Price</span>
+                                          <h5 className="text-end">
+                                            {list?.wac_price}
+                                          </h5>
+                                        </div>
+                                      </div>
+                                    </li>
+                                    {list?.tiers?.map((tierData) => {
+                                      return (
+                                        <li className="split-li">
+                                          <div className="d-flex align-items-center justify-content-between tier-split">
+                                            <div className="">
+                                              <h6>Tier {tierData?.tier}</h6>
+                                            </div>
+                                            <div className="">
+                                              <h6>
+                                                <span>Discount:</span>{" "}
+                                                {tierData?.discount}
+                                              </h6>
+                                            </div>
+                                            <div>
+                                              <h6>
+                                                <span>Final Price:</span>{" "}
+                                                {tierData?.final_price}
+                                              </h6>
+                                            </div>
+                                          </div>
+                                        </li>
+                                      );
+                                    })}
+                                    {/* <li className="split-li">
                             <div className="d-flex align-items-center justify-content-between tier-split">
                                 <div className="">
                                     <h6>Tier 1</h6>
@@ -1066,10 +2840,10 @@ function Preview() {
                                 </div>
                             </div>
                           </li> */}
-                            </ul>
-                          );
-                        })}
-                        {/* <ul className="acc-list-data tiered">
+                                  </ul>
+                                );
+                              })}
+                              {/* <ul className="acc-list-data tiered">
                           <li className="hdr">
                             <div className="d-flex justify-content-between">
                                 <div className="ndc-num">
@@ -1174,32 +2948,324 @@ function Preview() {
                                 </div>
                             </div>
                           </li> */}
-                        {/* </ul> */} */
-                      </AccordionBody>
-                    </AccordionItem>
-                  </Accordion>
-                </div>
-              )}
-            </div>
+                              {/* </ul> */}
+                            </AccordionBody>
+                          </AccordionItem>
+                        </Accordion>
+                      </div>
+                    )}
+                  </div>
 
-            {/* Export Buttons */}
-            {isLoading ? (
-              ""
-            ) : (
-              <div className="p-3 d-flex justify-content-evenly  gap-2 export-btn">
-                <button
-                  className="exportxl-btn"
-                  onClick={() => handleExport()}
-                >
-                  <img src={fileImg} /> Export as Excel
-                </button>
-                {/* <Button className="exportxl-btn">
-                  <img src={xmlImg} /> Export as XML
-                </Button> */}
-              </div>
-            )}
+                  {/* Export Buttons */}
+                  {isLoading ? (
+                    ""
+                  ) : (
+                    <div className="p-3 d-flex justify-content-evenly  gap-12 export-btn">
+                      <button
+                        className="exportxl-btn"
+                        onClick={() => handleExport()}
+                      >
+                        <img src={fileImg} /> Export as Excel
+                      </button>
+                      <Button
+                        className="exportxl-btn"
+                        onClick={() => downloadAsXml()}
+                      >
+                        <img src={xmlImg} /> Export as XML
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="Comments-section">
+                    <div className="Comments-Top">
+                      <div className="Commets-heading">
+                        <p className="Comments-title">Comments</p>
+                      </div>
+                    </div>
+                    {commentsList?.length > 0 ?
+                      commentsList?.map((list) => {
+                        return (
+                          <div
+                            className="Comment-details"
+                            onClick={() => handleScrollToPage(list.section)}
+                          >
+                            <div>
+                              <div className="Comment-body">
+                                <div className="Customer-details">
+                                  <div className="customer-detail-1">
+                                    <div>
+                                      <Avatar
+                                        className="profile-img"
+                                        style={{
+                                          backgroundColor: "#8c8c8c",
+                                          color: "#1f1f1f",
+                                          fontWeight: 550,
+                                          marginRight: "10px",
+                                        }}
+                                      >
+                                        {list.commented_by
+                                          ?.charAt(0)
+                                          ?.toUpperCase()}
+                                      </Avatar>
+                                    </div>
+                                    <div>
+                                      <p className="Name-of-cust">
+                                        {list.commented_by}
+                                      </p>
+                                      <p className="Last-seen-cust">
+                                        {list?.created_at &&
+                                         formatMessageTime(list?.created_at) }
+                                      </p>
+                                      <div className="cust-comments">
+                                        <p>{list.comment}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                {/* <div className="Kebeb-menu">
+                                  <img src={dots} />
+                                </div> */}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }):
+                      <div className="text-center mt-5" style={{color:"var(--text)"}}>
+                          No Comments Added
+                        </div>}
+                  </div>
+                </>
+              )}
+            </>
           </Col>
         </Row>
+        <Modal
+          isOpen={isEdit}
+          centered
+          style={{ padding: "24px" }}
+          zIndex={4000}
+        >
+          <ModalHeader
+            toggle={toggleEditEntity}
+            style={{ padding: "24px", paddingBottom: "10px" }}
+          >
+            Edit Extracted Entity
+          </ModalHeader>
+          <ModalBody className="p-0">
+            <div class="edit-body">
+              <label for="start-date" class="modal-label text-capitalize">
+                {editEntitie?.key.replace(/_/g, " ")}
+              </label>
+              {editEntitie?.key === "channel_partner_type" ? (
+                <div>
+                  <Select
+                    options={docTypeOption}
+                    styles={colourStyles}
+                    onChange={(e) =>
+                      setEditEntitie({ ...editEntitie, value: e.value })
+                    }
+                  />
+                </div>
+              ) : editEntitie?.key === "document_status" ? (
+                <div>
+                  <Select
+                    options={contractStatus}
+                    styles={colourStyles}
+                    onChange={(e) =>
+                      setEditEntitie({ ...editEntitie, value: e.value })
+                    }
+                  />
+                </div>
+              ) : editEntitie?.key === "source_type" ? (
+                <div>
+                  <Select
+                    options={sourceOption}
+                    styles={colourStyles}
+                    onChange={(e) =>
+                      setEditEntitie({ ...editEntitie, value: e.value })
+                    }
+                  />
+                </div>
+              ) : editEntitie?.key === "adjust_by" ? (
+                <div>
+                  <Select
+                    options={adjustOption}
+                    styles={colourStyles}
+                    onChange={(e) =>
+                      setEditEntitie({ ...editEntitie, value: e.value })
+                    }
+                  />
+                </div>
+              ) : editEntitie?.key === "pricing_method" ? (
+                <div>
+                  <Select
+                    options={pricingOption}
+                    styles={colourStyles}
+                    onChange={(e) =>
+                      setEditEntitie({ ...editEntitie, value: e.value })
+                    }
+                  />
+                </div>
+              ) : editEntitie?.key === "start_date" ||
+                editEntitie?.key === "end_date" ? (
+                <div style={{ width: "100%" }}>
+                  <DatePicker
+                    showIcon
+                    icon={<Calendar />}
+                    closeOnScroll
+                    selected={
+                      editEntitie?.value &&
+                      format(new Date(editEntitie?.value), "yyyy-MM-dd")
+                    }
+                    onChange={(date) =>
+                      setEditEntitie({
+                        ...editEntitie,
+                        value: format(new Date(date), "yyyy-MM-dd"),
+                      })
+                    }
+                    placeholderText="Select From Date"
+                    className="date-input"
+                    calendarClassName="custom-calendar edit"
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select" // or "scroll" if you want scrolling instead of dropdown
+                  />
+                </div>
+              ) : (
+                <div class="input-icon">
+                  <input
+                    id="start-date"
+                    type="text"
+                    value={editEntitie?.value}
+                    class="modal-input"
+                    onChange={(e) =>
+                      setEditEntitie({
+                        ...editEntitie,
+                        value: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              )}
+
+              <label for="reason" class="modal-label">
+                Why you are changing this value?
+              </label>
+              <textarea
+                id="reason"
+                class="modal-textarea"
+                rows="6"
+                onChange={(e) =>
+                  setEditEntitie({
+                    ...editEntitie,
+                    comment: e.target.value,
+                  })
+                }
+              ></textarea>
+            </div>
+            <div class="modal-actions">
+              <button class="cancel-btn" onClick={() => toggleEditEntity()}>
+                Cancel
+              </button>
+              <button class="save-btn" onClick={() => updateContract()}>
+                Save Changes
+              </button>
+            </div>
+          </ModalBody>
+        </Modal>
+        <Modal isOpen={isTierWarning} centered zIndex={4000} className="edittierleve">
+          <span toggle={() => setIsTierWarning(!isTierWarning)} className="edit-tier-level-title">
+            Edit Tier Level?
+          </span>
+          <div className="edite-tierlevel-body">
+            Editing the tier level will recalculate and regenerate the Tiered LI
+            section. Would you like to continue?
+            <div class="modal-actions">
+              <button
+                class="cancel-btn"
+                onClick={() => setIsTierWarning(!isTierWarning)}
+              >
+                Cancel
+              </button>
+              <button class="save-btn" onClick={() => confirmEditTierLevl()}>
+                Yes, Confirm
+              </button>
+            </div>
+          </div>
+        </Modal>
+        <Modal isOpen={isTierEdit} centered zIndex={4000}>
+          <ModalHeader toggle={()=>setIsTierEdit(!isTierEdit)}>Edit Tier Level 0{editTierData?.tier_level}</ModalHeader>
+          <ModalBody>
+            <div className="container">
+              <div className="row">
+                <div className="col-6 mb-2">
+                  <label>Purchase Volume Min</label>
+                  <div>
+                    <input className="modal-input"
+                     value={editTierData?.volume_min}
+                      onChange={(e)=>setEditTierData({...editTierData,volume_min:e.target.value})}/>
+                  </div>
+                </div>
+                <div className="col-6 mb-2">
+                  <label>Purchase Volume Max</label>
+                  <div>
+                    <input className="modal-input" 
+                     value={editTierData?.volume_max}
+                       onChange={(e)=>setEditTierData({...editTierData,volume_max:e.target.value})}
+                     />
+                  </div>
+                </div>
+                <div className="col-4">
+                  <label>Price Discount (%)</label>
+                  <div>
+                    <input className="modal-input"
+                      value={editTierData?.discount_percentage}
+                      onChange={(e)=>setEditTierData({...editTierData,discount_percentage:e.target.value})}
+                      />
+                  </div>
+                </div>
+                <div className="col-4">
+                  <label>Admin Fees (%)</label>
+                  <div>
+                    <input className="modal-input" 
+                    value={editTierData?.admin_fee_percentage}
+                    onChange={(e)=>setEditTierData({...editTierData,admin_fee_percentage:e.target.value})}/>
+                  </div>
+                </div>
+                <div className="col-4">
+                  <label>Rebate (%)</label>
+                  <div>
+                    <input className="modal-input"
+                     value={editTierData?.rebate_percentage}
+                     onChange={(e)=>setEditTierData({...editTierData,rebate_percentage:e.target.value})}
+                     />
+                  </div>
+                </div>
+                <div className="col-12">
+                  <label>Comments (optional)</label>
+                  <div>
+                    <textarea className="modal-input" 
+                    onChange={(e)=>setEditTierData({...editTierData,comment:e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button
+                  class="cancel-btn"
+                  onClick={()=>setIsTierEdit(!isTierEdit)}
+                >
+                  Cancel
+                </button>
+                <button class="save-btn" onClick={()=>handleEditTierData()}>
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </ModalBody>
+        </Modal>
       </div>
     </Layouts>
   );

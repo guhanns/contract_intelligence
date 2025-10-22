@@ -18,6 +18,7 @@
     width: calc(100% -10px);
     overflow: hidden;
     padding-bottom: 80px;
+    border-radius: 6px;
 }
 
 .contract-search-box.grid{
@@ -49,10 +50,11 @@
     margin-bottom: 10px;
     width: 100%;
     border: 1px solid var(--contract-details-tot-border);
+    border-radius: 6px;
 }
 
 .contract-details-box.right{
-
+  border-radius: 6px;
 }
 
 
@@ -71,6 +73,7 @@
     overflow: hidden;
     transition: height 0.4s linear;
     /* border: 1px solid #1F242F; */
+    border-radius: 6px;
 }
 
 .pricing-table-box.inc{
@@ -254,6 +257,7 @@
 
 .contract-search-box .search-box-head {
     margin-bottom: 20px;
+    
 }
 
 .contract-search-box{
@@ -654,7 +658,7 @@ font-size: 14px;
 .product-table-container {
   background-color: var(--pricing-table-bg);
   color: #ffffff;
-  padding: 10px 10px;
+ padding: 10px 10px;
   font-family: 'Segoe UI', sans-serif;
   overflow-y: auto;
   height: 40vh;
@@ -699,10 +703,11 @@ font-size: 14px;
 .product-accordion.accordion{
   margin: 0;
   padding: 0px;
-
+position: relative;
+z-index: 9000;
 }
 
-.product-table-container .product-tier-table th{
+/* .product-table-container .product-tier-table th{
 height: 40px;
 background-color: var(--pricing-table-th-bg);
 }
@@ -712,6 +717,21 @@ background-color: var(--pricing-table-th-bg);
   border: 1px solid var(--border);
   padding: 8px;
   text-align: left;
+} */
+
+.product-table-container .product-tier-table th{
+height: 40px;
+background-color: var(--pricing-table-th-bg);
+border-bottom: 1px solid var(--border-ppt-color);
+}
+.product-tier-table th,
+.product-tier-table td {
+  border: 1px solid var(--border);
+  padding: 8px;
+  text-align: left;
+}
+.product-tier-table td{
+  border-bottom: 1px solid var(--border-ppt-color)!important;
 }
 
 .product-table-container .product-tier-table .price-th th{
@@ -1046,9 +1066,9 @@ label {
 .date-input {
   width: 100%;
   padding: 10px 10px 10px 36px;
-  border: 1px solid #374151;
-  background-color: #0c111d;
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background-color: var(--bg);
+  color: var(--text);
   border-radius: 8px;
   font-size: 14px;
   outline: none;
@@ -1066,6 +1086,10 @@ label {
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   /* padding: 10px; */
+}
+
+.custom-calendar.edit{
+  width: 100%;
 }
 
 .react-datepicker__header {
@@ -1096,11 +1120,13 @@ label {
 }
 
 /* Grid Card */
+.contract-card-box{
+  overflow-y: scroll;
+  height: calc(90vh - 80px);
+}
 
 .grid-card-row{
   padding: 0px 10px;
-  overflow-y: scroll;
-  height: calc(90vh - 80px);
 }
 
 .grid-card{
@@ -1199,6 +1225,31 @@ label {
   font-size: 14px;
   font-weight: 400;
 }
+.nocontract-select{
+font-family: "inter";
+font-weight: 600;
+font-size: 14px;
+}
 
+ 
+.nocontract-select p{
+font-family:"Inter";
+font-weight: 400;
+font-size:14px;
+ 
+}
+
+.no-contract-status{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 150px;
+  color: var(--text);
+}
+
+.no-contract-status p{
+  color: var(--text-teritary);
+}
+ 
 
 

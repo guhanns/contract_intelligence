@@ -17,6 +17,8 @@ import ContractFile from "./Components/Pages/ContractFile/ContractFile";
 import Chat from "./Components/Pages/Chat/Chat";
 import ContractList from "./Components/Pages/ContractList/ContractList";
 import ContractListNew from "./Components/Pages/ContractList/ContractListNew";
+import Comparison from "./Components/Pages/Comparison/Comparison";
+import AuditLog from "./Components/Pages/AuditLog/AuditLog";
 
 const dashboardRoutes = [
   {
@@ -133,6 +135,26 @@ const contractRouters =[
   }
 ]
 
+const comparisonRouter =[
+  {
+    path:'/comparison',
+     handle: {
+      crumb: () => (
+        <NavLink to="/comparison" className="breadcrumb-link">
+          Comparison
+        </NavLink>
+      ),
+      activeMenuId: "comparison",
+    },
+    children:[
+      {
+        index: true,
+        element: <Comparison />,
+      },
+    ]
+  }
+]
+
 const uploadRouters = [
   {
     path: "/list",
@@ -182,6 +204,27 @@ const chatRouters = [
   
 ]
 
+const AuditRouters = [
+ { 
+  path: "/audit",
+  handle: {
+      crumb: () => (
+        <NavLink to="/audit" className="breadcrumb-link">
+          Audit
+        </NavLink>
+      ),
+      activeMenuId: "audit",
+    },
+  children: [
+      {
+        index: true,
+        element: <AuditLog />,
+      },
+    ],
+  },
+  
+]
+
 export const router = createBrowserRouter(
   [
     // Public Routes
@@ -209,7 +252,9 @@ export const router = createBrowserRouter(
           children: concat(
             uploadRouters,
             contractRouters,
-            chatRouters
+            chatRouters,
+            comparisonRouter,
+            AuditRouters
           ),
           errorElement: <ErrorBoundary />,
         },
