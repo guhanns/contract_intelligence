@@ -136,6 +136,7 @@
     font-size: 14px;
     font-weight: 500;
     margin-right: 8px;
+    border:1px solid var(--border)
 }
 
 .contract-head-menu .menu-head-1 .menu-head-count .total .count,.expire .count{
@@ -254,8 +255,18 @@
 .contract-search-box .search-box-head {
     margin-bottom: 20px;
 }
+
+.contract-search-box{
+ border: 1px solid var(--border);
+}
+
+.contract-search-box.grid{
+ border: 1px solid var(--border);
+}
+
 .contract-search-box.grid .search-box-head.grid {
     margin-bottom: 20px;
+    
 }
 
 .contract-search-box .search-box-head h3{
