@@ -109,6 +109,16 @@ function ContractList() {
                 <h5 className="id">SM125678</h5>
               </div>
             </div>
+            <div className="contract-doc-list">
+              <label class="checkbox-container">
+                <input type="checkbox" />
+                <span class="custom-checkbox"></span>
+              </label>
+              <div className="doc-name-id">
+                <h5 className="name">PBM_Contract_Amgen_2025_Q1_v1.0.pdf</h5>
+                <h5 className="id">SM125678</h5>
+              </div>
+            </div>
           </div>
         </div>
         <div class="contract-head-menu">
@@ -118,6 +128,9 @@ function ContractList() {
               <div className="total">
                 <div className="ico">
                   <img src={theme==="Dark" ? fileImg: lightfile} />
+                </div>
+                <div className="d-flex align-items-center">
+                  Total Contracts<span className="count">252</span>
                 </div>
                 <div className="d-flex align-items-center">
                   Total Contracts<span className="count">252</span>
