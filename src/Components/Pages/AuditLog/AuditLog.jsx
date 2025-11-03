@@ -12,16 +12,16 @@ function AuditLog() {
       <div className="container-fluid p-0">
         <div className="audit-header-container">
           <div className="audit-head-left">
-            <ArrowLeft /> Contract Changes
+            Audit Log
           </div>
-          <div className="audit-head-right">
+          {/* <div className="audit-head-right">
             <div class="btn-group-tabs">
-              <button class={`btn-group-tabs__button btn-group-tabs__button ${tabId===0 && 'active'}`} onClick={()=>setTabId(0)}>
+              <button class={` btn-group-tabs__button ${tabId===0 && 'active'}`} onClick={()=>setTabId(0)}>
                 Change History
               </button>
               <button class={`btn-group-tabs__button ${tabId===1 && 'active'}`}  onClick={()=>setTabId(1)}>Change Summary</button>
             </div>
-          </div>
+          </div> */}
         </div>
         <div className='audit-main-section'>
             {

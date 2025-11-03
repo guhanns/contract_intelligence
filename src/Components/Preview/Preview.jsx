@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, version } from "react";
 import Layouts from "../Pages/Layouts/Layouts";
 import "./preview.css";
 import classnames from "classnames";
+import aidark from './../../images/icons/stardark.svg'
+import ailight from './../../images/icons/starlight.svg'
 import loadingImg from "../../images/icons/Group 3.svg";
 import lightLoading from "../../images/icons/lightLoading.svg";
 import fileImg from "../../images/icons/Excel-default.svg";
@@ -18,7 +20,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from "remark-gfm";
 import { truncate } from "lodash";
 import DatePicker from "react-datepicker";
-import {Calendar, CircleAlert, CircleCheckBig, EllipsisVertical, Pencil, TriangleAlert} from  'lucide-react'
+import {Calendar, CircleAlert, CircleCheckBig, EllipsisVertical, Pencil, TriangleAlert, X} from  'lucide-react'
 
 import contractPdf from "./SRM Pharma Contract.pdf";
 import pricingPdf from "./Product_Pricing_Table.pdf";
@@ -64,12 +66,69 @@ import { useMsal } from "@azure/msal-react";
 import { addMessageByBot, addMessageByUser, clearChat } from "../redux/features/previewChat";
 import { format, getTime, isToday, isYesterday } from "date-fns";
 import Select from "react-select";
-import { colourStyles } from "../Pages/ContractList/ContractListNew";
 import PdfViewerWithPopup from "../Pages/PDFViewer/PdfViewerWithPopup";
 import closeImg from "../../images/icons/x-comments.svg";
 import avatar from "../../images/icons/Avatar-comment.svg";
 import dots from "../../images/icons/dots-vertical-comment.svg";
 import Avatar from "@mui/material/Avatar";
+import Sections from "./Sections";
+import aiDark from '../../images/icons/aiDark.svg';
+
+const colourStyles = {
+  container: (styles) => ({
+    ...styles,
+    width: "100%",
+    fontSize: "16px",
+    color: "var(--text)",
+  }),
+  control: (styles, { isFocused }) => ({
+    ...styles,
+    backgroundColor: "var(--select-option-bg-color)",
+    cursor: "pointer",
+    minHeight: "40px",
+    borderRadius: "8px",
+    borderColor: isFocused ? "var(--select-option-boder-focused)" :  "var(--react-select-border-color)",
+    boxShadow: "none",
+    ":hover": {
+      borderColor: "var(--select-option-border-onhover)",
+    },
+  }),
+  menu: (styles) => ({
+    ...styles,
+    backgroundColor: "var(--bg-color-select-still)",
+    border: "1px solid var(--select-document-type-border)",
+    zIndex: 9999,
+  }),
+  option: (styles, { isFocused }) => ({
+    ...styles,
+    cursor: "pointer",
+    backgroundColor: isFocused ? "var(--select-option-boder-focused)" : "var(--select-option-bg-color)",
+    color: "var(--document-type-font-color)",
+    ":hover": {
+      backgroundColor: "var(--document-type-hover)",
+    },
+    fontSize: "14px",
+  }),
+  placeholder: (styles) => ({
+    ...styles,
+    color: "var(--placeholder-text)",
+    fontSize: "14px",
+  }),
+  singleValue: (styles) => ({
+    ...styles,
+    color: "var(--text)",
+  }),
+  indicatorSeparator: () => ({
+    display: "none",
+  }),
+  dropdownIndicator: (styles) => ({
+    ...styles,
+    color: "var(--text)",
+    ":hover": {
+      color: "var(--placeholder-text)",
+    },
+  }),
+};
 
 const docTypeOption = [
     {
@@ -315,6 +374,12 @@ function Preview() {
    const [isTierWarning,setIsTierWarning] = useState(false)
    const [isTierEdit,setIsTierEdit] = useState(false)
    const [editTierData,setEditTierData] = useState({})
+    const [width, setWidth] = useState(300); // initial width, adjust as needed
+  const minWidth = 300;
+  const maxWidth = 600;
+  
+  const containerRef = useRef(null);
+  const isResizingRef = useRef(false);
 
   const [contractUrl, setContractUrl] = useState("");
   const [url, setUrl] = useState("");
@@ -518,52 +583,72 @@ function Preview() {
 //   };
 
   const handleExport = () => {
-  const sheetData = [];
+    const sheetData = [];
 
-  // Helper to push object or array section into sheetData
-  const pushSection = (title, data) => {
-    if (!data || (Array.isArray(data) && data.length === 0)) return;
+    // Helper to push object or array section into sheetData
+    const pushSection = (title, data) => {
+      if (!data || (Array.isArray(data) && data.length === 0)) return;
 
-    sheetData.push([`${title.toUpperCase()}`]);
+      sheetData.push([`${title.toUpperCase()}`]);
 
-    if (Array.isArray(data)) {
-      const headers = Object.keys(data[0] || {});
-      sheetData.push(headers);
-      data.forEach((item) => {
-        sheetData.push(headers.map((key) => item[key]));
+      if (Array.isArray(data)) {
+        const headers = Object.keys(data[0] || {});
+        sheetData.push(headers);
+        data.forEach((item) => {
+          sheetData.push(headers.map((key) => item[key]));
+        });
+      } else if (typeof data === "object") {
+        const entries = Object.entries(data);
+        // sheetData.push(["Key", "Value"]);
+        entries.forEach(([key, value]) => {
+          sheetData.push([
+            key,
+            typeof value === "object" ? JSON.stringify(value) : value,
+          ]);
+        });
+      }
+
+      sheetData.push([]); // Spacer row
+    };
+
+    // Push each section
+    pushSection("Contracts", contractOffer);
+    pushSection("Tier Structures", tierSummary);
+    // pushSection("Products", tierDataProduct);
+
+    // Convert to worksheet
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+    // Create and append workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Combined Data");
+
+    // Write and download
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    const filename = url?.file_name?.split(".")[0] || "exported_data";
+    saveAs(blob, `${filename}.xlsx`);
+    request({
+      url: "/icontract/audit/log",
+      method: "POST",
+      data: {
+        contract_id: contractOffer?.id,
+        user_name: accounts[0]?.name,
+        user_id: accounts[0]?.localAccountId,
+        action_type: "EXPORT",
+        context:`EXCEL Document Dowloaded for Contarct ${contractOffer?.contract_number}- v${contractOffer?.document_version_number} - ${contractOffer?.document_path}`
+      },
+    })
+      .then((res) => {
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err);
       });
-    } else if (typeof data === "object") {
-      const entries = Object.entries(data);
-      // sheetData.push(["Key", "Value"]);
-      entries.forEach(([key, value]) => {
-        sheetData.push([key, typeof value === "object" ? JSON.stringify(value) : value]);
-      });
-    }
-
-    sheetData.push([]); // Spacer row
   };
-
-  // Push each section
-  pushSection("Contracts", contractOffer);
-  pushSection("Tier Structures", tierSummary);
-  // pushSection("Products", tierDataProduct);
-
-  // Convert to worksheet
-  const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-  // Create and append workbook
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Combined Data");
-
-  // Write and download
-  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([wbout], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-
-  const filename = url?.file_name?.split('.')[0] || "exported_data";
-  saveAs(blob, `${filename}.xlsx`);
-};
 
   const prevContract =()=>{
     
@@ -698,6 +783,8 @@ function Preview() {
 
   const toggleSection = () =>{
     setIsSection(!isSection)
+    setWidth(300)
+    fetchCommentList()
   }
 
   
@@ -739,7 +826,7 @@ function Preview() {
 
 
   const handleScrollToPage = (pageNum) => {
-    const pageElement = document.getElementById(`page_${pageNum}`);
+     const pageElement = document.querySelector(`[data-page-number="${pageNum}"]`);
     if (pageElement) {
       pageElement.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -781,6 +868,34 @@ function Preview() {
       toast.error("Entities not Updated")
     })
   }
+
+  const handleMouseDown = (e) => {
+    isResizingRef.current = true;
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizingRef.current) return;
+      const newWidth = e.clientX - (containerRef.current?.getBoundingClientRect().left ?? 0);
+      if (newWidth >= minWidth && newWidth <= maxWidth) {
+        setWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = (e) => {
+      if (isResizingRef.current) {
+        isResizingRef.current = false;
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   return (
     <Layouts>
@@ -982,13 +1097,13 @@ function Preview() {
           {/* Left Side: File Preview */}
           <Col lg="8" className="left-nav">
             <div className={`pdf-view-url ${isSection ? "pdf-resize" : ""}`}>
-              {/* <div
+              <div
                 className="layout-section"
                 title="Section"
                 onClick={() => toggleSection()}
               >
                 <img src={layoutLeft} />
-              </div> */}
+              </div>
               {url?.file_url && (
                 <PdfViewerWithPopup
                   file={url?.file_url}
@@ -996,6 +1111,7 @@ function Preview() {
                   contract={contractOffer}
                   fetchList={fetchCommentList}
                   commentList={commentsList}
+                  width={containerRef}
                 />
               )}
               {/* <iframe
@@ -1005,39 +1121,35 @@ function Preview() {
                 height={"900px"}
                 // style={{ border: "1px solid #ccc" }}
               /> */}
-              <div className={`section-list-layout ${isSection ? "" : "hide"}`}>
+              <div
+                ref={containerRef}
+                className={`section-list-layout ${isSection ? "" : "hide"}`}
+                style={{
+                  width: `${width}px` /* maybe minWidth and maxWidth inline for safety */,
+                }}
+              >
                 <div>
                   <div className="layout-header">
-                    <div className="head">Sections</div>
+                    <div className="head"><img src={theme === 'Dark'?aiDark:ailight}/>Sections</div>
                     <div className="off-btn" onClick={() => toggleSection()}>
-                      <img src={layoutLeft} />
+                    <img src={layoutLeft} />
                     </div>
                   </div>
-                  <div className="section-list-acc">
-                    <Accordion
-                      open={open}
-                      toggle={toggleSectionAcc}
-                      className="custom-accordion"
-                    >
-                      {sections.map((section, idx) => (
-                        <AccordionItem key={idx}>
-                          <AccordionHeader targetId={`${idx + 1}`}>
-                            {truncate(section?.title, { length: "29" })}
-                          </AccordionHeader>
-                          <AccordionBody accordionId={`${idx + 1}`}>
-                            {section.subsections.length > 0 && (
-                              <ul className="subsection-list">
-                                {section.subsections.map((sub, subIdx) => (
-                                  <li key={subIdx}>{sub}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </AccordionBody>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </div>
+                  <Sections filename={url?.file_name} />
+                  
                 </div>
+                <div
+                    className="resize-handle"
+                    onMouseDown={handleMouseDown}
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: "5px",
+                      cursor: "col-resize",
+                    }}
+                  />
               </div>
             </div>
           </Col>
@@ -1172,7 +1284,7 @@ function Preview() {
                   <div className="prev-acc-box preview">
                     <div className="history-container">
                       {/* Tabs */}
-                         <Nav tabs className="history-tabs">
+                      <Nav tabs className="history-tabs">
                         <NavItem>
                           <NavLink
                             className={classnames({
@@ -1194,8 +1306,6 @@ function Preview() {
                           </NavLink>
                         </NavItem>
                       </Nav>
-                      
-                     
 
                       {/* Tab Content */}
                       {histLoading ? (
@@ -1388,161 +1498,170 @@ function Preview() {
                                           <span className="text-capitalize">
                                             {key?.replace(/_/g, " ")}:{" "}
                                           </span>
-                                          {key==='program_only'? obj.value===0 ? 'FALSE' :'TRUE' :String(obj?.value)}
-                                          {
-                                            key !== "owner" &&
-                                            key !=="document_status" &&
-                                            key !=="author" &&  <span className="ms-2">
-                                            {obj?.confidence_category ===
-                                              "High" && (
-                                              <>
-                                                {/* wrap icon in a real DOM element with id */}
-                                                <span
-                                                  id={`tooltip-${index}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleCheckBig
-                                                    size={18}
-                                                    color="#17B26A"
-                                                  />
-                                                </span>
+                                          {key === "program_only"
+                                            ? obj.value === 0
+                                              ? "FALSE"
+                                              : "TRUE"
+                                            : String(obj?.value)}
+                                          {key !== "owner" &&
+                                            key !== "document_status" &&
+                                            key !== "author" && (
+                                              <span className="ms-2">
+                                                {obj?.confidence_category ===
+                                                  "High" && (
+                                                  <>
+                                                    {/* wrap icon in a real DOM element with id */}
+                                                    <span
+                                                      id={`tooltip-${index}`}
+                                                      style={{
+                                                        display: "inline-block",
+                                                        cursor: "pointer",
+                                                      }}
+                                                    >
+                                                      <CircleCheckBig
+                                                        size={18}
+                                                        color="#17B26A"
+                                                      />
+                                                    </span>
 
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-${index}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#17B26A" }}
-                                                  >
-                                                    High
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
+                                                    <UncontrolledTooltip
+                                                      target={`tooltip-${index}`}
+                                                      placement="top"
+                                                      style={{
+                                                        border: "2px",
+                                                        borderStyle: "solid",
+                                                        borderColor: "#262A33",
+                                                        fontSize: "14px",
+                                                      }}
+                                                    >
+                                                      Confidence Score :{" "}
+                                                      <span
+                                                        style={{
+                                                          color: "#17B26A",
+                                                        }}
+                                                      >
+                                                        High
+                                                      </span>
+                                                    </UncontrolledTooltip>
+                                                  </>
+                                                )}
+
+                                                {obj?.confidence_category ===
+                                                  "Medium" && (
+                                                  <>
+                                                    <span
+                                                      id={`tooltip-${index}`}
+                                                      style={{
+                                                        display: "inline-block",
+                                                        cursor: "pointer",
+                                                      }}
+                                                    >
+                                                      <CircleAlert
+                                                        size={18}
+                                                        color="#F79009"
+                                                      />
+                                                    </span>
+
+                                                    <UncontrolledTooltip
+                                                      target={`tooltip-${index}`}
+                                                      placement="top"
+                                                      style={{
+                                                        border: "2px",
+                                                        borderStyle: "solid",
+                                                        borderColor: "#262A33",
+                                                        fontSize: "14px",
+                                                      }}
+                                                    >
+                                                      Confidence Score :{" "}
+                                                      <span
+                                                        style={{
+                                                          color: "#F79009",
+                                                        }}
+                                                      >
+                                                        Medium
+                                                      </span>
+                                                    </UncontrolledTooltip>
+                                                  </>
+                                                )}
+
+                                                {obj?.confidence_category ===
+                                                  "Low" && (
+                                                  <>
+                                                    <span
+                                                      id={`tooltip-${index}`}
+                                                      style={{
+                                                        display: "inline-block",
+                                                        cursor: "pointer",
+                                                      }}
+                                                    >
+                                                      <TriangleAlert
+                                                        size={18}
+                                                        color="#F04438"
+                                                      />
+                                                    </span>
+
+                                                    <UncontrolledTooltip
+                                                      target={`tooltip-${index}`}
+                                                      placement="top"
+                                                      style={{
+                                                        border: "2px",
+                                                        borderStyle: "solid",
+                                                        borderColor: "#262A33",
+                                                        fontSize: "14px",
+                                                      }}
+                                                    >
+                                                      Confidence Score :{" "}
+                                                      <span
+                                                        style={{
+                                                          color: "#F04438",
+                                                        }}
+                                                      >
+                                                        Low
+                                                      </span>
+                                                    </UncontrolledTooltip>
+                                                  </>
+                                                )}
+
+                                                {obj?.confidence_category ===
+                                                  null && (
+                                                  <>
+                                                    <span
+                                                      id={`tooltip-${index}`}
+                                                      style={{
+                                                        display: "inline-block",
+                                                        cursor: "pointer",
+                                                      }}
+                                                    >
+                                                      <TriangleAlert
+                                                        size={18}
+                                                        color="#F04438"
+                                                      />
+                                                    </span>
+
+                                                    <UncontrolledTooltip
+                                                      target={`tooltip-${index}`}
+                                                      placement="top"
+                                                      style={{
+                                                        border: "2px",
+                                                        borderStyle: "solid",
+                                                        borderColor: "#262A33",
+                                                        fontSize: "14px",
+                                                      }}
+                                                    >
+                                                      Confidence Score :{" "}
+                                                      <span
+                                                        style={{
+                                                          color: "#F04438",
+                                                          fontStyle: "italic",
+                                                        }}
+                                                      >
+                                                        N/A
+                                                      </span>
+                                                    </UncontrolledTooltip>
+                                                  </>
+                                                )}
+                                              </span>
                                             )}
-
-                                            {obj?.confidence_category ===
-                                              "Medium" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-${index}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleAlert
-                                                    size={18}
-                                                    color="#F79009"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-${index}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F79009" }}
-                                                  >
-                                                    Medium
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {obj?.confidence_category ===
-                                              "Low" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-${index}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-${index}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F04438" }}
-                                                  >
-                                                    Low
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {obj?.confidence_category ===
-                                              null && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-${index}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-${index}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{
-                                                      color: "#F04438",
-                                                      fontStyle: "italic",
-                                                    }}
-                                                  >
-                                                    N/A
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-                                          </span>
-                                          }
-                                         
                                         </div>
 
                                         <div className=" edit">
@@ -1939,7 +2058,6 @@ function Preview() {
                                             {" "}
                                             0{list?.tier_level}
                                           </span>{" "}
-
                                         </h6>
                                         <div>
                                           <Pencil
@@ -1956,156 +2074,164 @@ function Preview() {
                                           <span className="tier-span">
                                             Purchase Volume Min
                                           </span>
-                                          <h5>{list.volume_min ?? "-"}
-                                             <span className="ms-2">
-                                            {list?.volume_min_confidence_category ===
-                                              "High" && (
-                                              <>
-                                                {/* wrap icon in a real DOM element with id */}
-                                                <span
-                                                  id={`tooltip-summary-vmin-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleCheckBig
-                                                    size={18}
-                                                    color="#17B26A"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-vmin-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
+                                          <h5>
+                                            {list.volume_min ?? "-"}
+                                            <span className="ms-2">
+                                              {list?.volume_min_confidence_category ===
+                                                "High" && (
+                                                <>
+                                                  {/* wrap icon in a real DOM element with id */}
                                                   <span
-                                                    style={{ color: "#17B26A" }}
-                                                  >
-                                                    High
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.volume_min_confidence_category ===
-                                              "Medium" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-vmin-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleAlert
-                                                    size={18}
-                                                    color="#F79009"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-vmin-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F79009" }}
-                                                  >
-                                                    Medium
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.volume_min_confidence_category ===
-                                              "Low" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-vmin-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-vmin-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F04438" }}
-                                                  >
-                                                    Low
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.volume_min_confidence_category ===
-                                              null && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-vmin-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-vmin-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
+                                                    id={`tooltip-summary-vmin-${idx}`}
                                                     style={{
-                                                      color: "#F04438",
-                                                      fontStyle: "italic",
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
                                                     }}
                                                   >
-                                                    N/A
+                                                    <CircleCheckBig
+                                                      size={18}
+                                                      color="#17B26A"
+                                                    />
                                                   </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-                                          </span></h5>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-vmin-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#17B26A",
+                                                      }}
+                                                    >
+                                                      High
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.volume_min_confidence_category ===
+                                                "Medium" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-vmin-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <CircleAlert
+                                                      size={18}
+                                                      color="#F79009"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-vmin-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F79009",
+                                                      }}
+                                                    >
+                                                      Medium
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.volume_min_confidence_category ===
+                                                "Low" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-vmin-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-vmin-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                      }}
+                                                    >
+                                                      Low
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.volume_min_confidence_category ===
+                                                null && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-vmin-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-vmin-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                        fontStyle: "italic",
+                                                      }}
+                                                    >
+                                                      N/A
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+                                            </span>
+                                          </h5>
                                         </div>
                                         <div className="wac-price ndc-bg">
                                           <span className="tier-span">
@@ -2113,155 +2239,161 @@ function Preview() {
                                           </span>
                                           <h5 className="">
                                             {list.volume_max ?? "-"}
-                                             <span className="ms-2">
-                                            {list?.volume_max_confidence_category ===
-                                              "High" && (
-                                              <>
-                                                {/* wrap icon in a real DOM element with id */}
-                                                <span
-                                                  id={`tooltip-summary-vmax-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleCheckBig
-                                                    size={18}
-                                                    color="#17B26A"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-vmax-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
+                                            <span className="ms-2">
+                                              {list?.volume_max_confidence_category ===
+                                                "High" && (
+                                                <>
+                                                  {/* wrap icon in a real DOM element with id */}
                                                   <span
-                                                    style={{ color: "#17B26A" }}
-                                                  >
-                                                    High
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.volume_max_confidence_category ===
-                                              "Medium" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-vmax-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleAlert
-                                                    size={18}
-                                                    color="#F79009"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-vmax-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F79009" }}
-                                                  >
-                                                    Medium
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.volume_max_confidence_category ===
-                                              "Low" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-vmax-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-vmax-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F04438" }}
-                                                  >
-                                                    Low
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.volume_max_confidence_category ===
-                                              null && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-vmax-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-vmax-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
+                                                    id={`tooltip-summary-vmax-${idx}`}
                                                     style={{
-                                                      color: "#F04438",
-                                                      fontStyle: "italic",
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
                                                     }}
                                                   >
-                                                    N/A
+                                                    <CircleCheckBig
+                                                      size={18}
+                                                      color="#17B26A"
+                                                    />
                                                   </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-                                          </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-vmax-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#17B26A",
+                                                      }}
+                                                    >
+                                                      High
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.volume_max_confidence_category ===
+                                                "Medium" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-vmax-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <CircleAlert
+                                                      size={18}
+                                                      color="#F79009"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-vmax-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F79009",
+                                                      }}
+                                                    >
+                                                      Medium
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.volume_max_confidence_category ===
+                                                "Low" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-vmax-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-vmax-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                      }}
+                                                    >
+                                                      Low
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.volume_max_confidence_category ===
+                                                null && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-vmax-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-vmax-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                        fontStyle: "italic",
+                                                      }}
+                                                    >
+                                                      N/A
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+                                            </span>
                                           </h5>
                                         </div>
                                       </div>
@@ -2274,156 +2406,163 @@ function Preview() {
                                               Price Discount (%)
                                             </span>{" "}
                                           </h5>
-                                          <h5>{list.discount_percentage}%
-                                             <span className="ms-2">
-                                            {list?.volume_min_confidence_category ===
-                                              "High" && (
-                                              <>
-                                                {/* wrap icon in a real DOM element with id */}
-                                                <span
-                                                  id={`tooltip-summary-dis-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleCheckBig
-                                                    size={18}
-                                                    color="#17B26A"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-dis-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
+                                          <h5>
+                                            {list.discount_percentage}%
+                                            <span className="ms-2">
+                                              {list?.volume_min_confidence_category ===
+                                                "High" && (
+                                                <>
+                                                  {/* wrap icon in a real DOM element with id */}
                                                   <span
-                                                    style={{ color: "#17B26A" }}
-                                                  >
-                                                    High
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.volume_min_confidence_category ===
-                                              "Medium" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-dis-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleAlert
-                                                    size={18}
-                                                    color="#F79009"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-dis-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F79009" }}
-                                                  >
-                                                    Medium
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.volume_min_confidence_category ===
-                                              "Low" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-dis-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-dis-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F04438" }}
-                                                  >
-                                                    Low
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.volume_min_confidence_category ===
-                                              null && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-dis-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-dis-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
+                                                    id={`tooltip-summary-dis-${idx}`}
                                                     style={{
-                                                      color: "#F04438",
-                                                      fontStyle: "italic",
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
                                                     }}
                                                   >
-                                                    N/A
+                                                    <CircleCheckBig
+                                                      size={18}
+                                                      color="#17B26A"
+                                                    />
                                                   </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-                                          </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-dis-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#17B26A",
+                                                      }}
+                                                    >
+                                                      High
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.volume_min_confidence_category ===
+                                                "Medium" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-dis-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <CircleAlert
+                                                      size={18}
+                                                      color="#F79009"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-dis-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F79009",
+                                                      }}
+                                                    >
+                                                      Medium
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.volume_min_confidence_category ===
+                                                "Low" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-dis-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-dis-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                      }}
+                                                    >
+                                                      Low
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.volume_min_confidence_category ===
+                                                null && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-dis-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-dis-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                        fontStyle: "italic",
+                                                      }}
+                                                    >
+                                                      N/A
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+                                            </span>
                                           </h5>
                                         </div>
                                         <div className="ndc-num">
@@ -2432,156 +2571,163 @@ function Preview() {
                                               Admin Fees(%)
                                             </span>{" "}
                                           </h5>
-                                          <h5>{list.admin_fee_percentage}%
+                                          <h5>
+                                            {list.admin_fee_percentage}%
                                             <span className="ms-2">
-                                            {list?.discount_percentage_confidence_category ===
-                                              "High" && (
-                                              <>
-                                                {/* wrap icon in a real DOM element with id */}
-                                                <span
-                                                  id={`tooltip-summary-adm-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleCheckBig
-                                                    size={18}
-                                                    color="#17B26A"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-adm-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
+                                              {list?.discount_percentage_confidence_category ===
+                                                "High" && (
+                                                <>
+                                                  {/* wrap icon in a real DOM element with id */}
                                                   <span
-                                                    style={{ color: "#17B26A" }}
-                                                  >
-                                                    High
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.discount_percentage_confidence_category ===
-                                              "Medium" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-adm-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleAlert
-                                                    size={18}
-                                                    color="#F79009"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-adm-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F79009" }}
-                                                  >
-                                                    Medium
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.discount_percentage_confidence_category ===
-                                              "Low" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-adm-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-adm-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F04438" }}
-                                                  >
-                                                    Low
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.discount_percentage_confidence_category ===
-                                              null && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-adm-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-adm-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
+                                                    id={`tooltip-summary-adm-${idx}`}
                                                     style={{
-                                                      color: "#F04438",
-                                                      fontStyle: "italic",
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
                                                     }}
                                                   >
-                                                    N/A
+                                                    <CircleCheckBig
+                                                      size={18}
+                                                      color="#17B26A"
+                                                    />
                                                   </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-                                          </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-adm-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#17B26A",
+                                                      }}
+                                                    >
+                                                      High
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.discount_percentage_confidence_category ===
+                                                "Medium" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-adm-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <CircleAlert
+                                                      size={18}
+                                                      color="#F79009"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-adm-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F79009",
+                                                      }}
+                                                    >
+                                                      Medium
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.discount_percentage_confidence_category ===
+                                                "Low" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-adm-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-adm-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                      }}
+                                                    >
+                                                      Low
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.discount_percentage_confidence_category ===
+                                                null && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-adm-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-adm-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                        fontStyle: "italic",
+                                                      }}
+                                                    >
+                                                      N/A
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+                                            </span>
                                           </h5>
                                         </div>
                                         <div className="ndc-num">
@@ -2590,156 +2736,163 @@ function Preview() {
                                               Rebate(%)
                                             </span>{" "}
                                           </h5>
-                                          <h5>{list.rebate_percentage}%
+                                          <h5>
+                                            {list.rebate_percentage}%
                                             <span className="ms-2">
-                                            {list?.rebate_percentage_confidence_category ===
-                                              "High" && (
-                                              <>
-                                                {/* wrap icon in a real DOM element with id */}
-                                                <span
-                                                  id={`tooltip-summary-rb-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleCheckBig
-                                                    size={18}
-                                                    color="#17B26A"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-rb-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
+                                              {list?.rebate_percentage_confidence_category ===
+                                                "High" && (
+                                                <>
+                                                  {/* wrap icon in a real DOM element with id */}
                                                   <span
-                                                    style={{ color: "#17B26A" }}
-                                                  >
-                                                    High
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.rebate_percentage_confidence_category ===
-                                              "Medium" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-rb-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <CircleAlert
-                                                    size={18}
-                                                    color="#F79009"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-rb-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F79009" }}
-                                                  >
-                                                    Medium
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.rebate_percentage_confidence_category ===
-                                              "Low" && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-rb-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-rb-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
-                                                    style={{ color: "#F04438" }}
-                                                  >
-                                                    Low
-                                                  </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-
-                                            {list?.rebate_percentage_confidence_category ===
-                                              null && (
-                                              <>
-                                                <span
-                                                  id={`tooltip-summary-rb-${idx}`}
-                                                  style={{
-                                                    display: "inline-block",
-                                                    cursor: "pointer",
-                                                  }}
-                                                >
-                                                  <TriangleAlert
-                                                    size={18}
-                                                    color="#F04438"
-                                                  />
-                                                </span>
-
-                                                <UncontrolledTooltip
-                                                  target={`tooltip-summary-rb-${idx}`}
-                                                  placement="top"
-                                                  style={{
-                                                    border: "2px",
-                                                    borderStyle: "solid",
-                                                    borderColor: "#262A33",
-                                                    fontSize: "14px",
-                                                  }}
-                                                >
-                                                  Confidence Score :{" "}
-                                                  <span
+                                                    id={`tooltip-summary-rb-${idx}`}
                                                     style={{
-                                                      color: "#F04438",
-                                                      fontStyle: "italic",
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
                                                     }}
                                                   >
-                                                    N/A
+                                                    <CircleCheckBig
+                                                      size={18}
+                                                      color="#17B26A"
+                                                    />
                                                   </span>
-                                                </UncontrolledTooltip>
-                                              </>
-                                            )}
-                                          </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-rb-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#17B26A",
+                                                      }}
+                                                    >
+                                                      High
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.rebate_percentage_confidence_category ===
+                                                "Medium" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-rb-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <CircleAlert
+                                                      size={18}
+                                                      color="#F79009"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-rb-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F79009",
+                                                      }}
+                                                    >
+                                                      Medium
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.rebate_percentage_confidence_category ===
+                                                "Low" && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-rb-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-rb-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                      }}
+                                                    >
+                                                      Low
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+
+                                              {list?.rebate_percentage_confidence_category ===
+                                                null && (
+                                                <>
+                                                  <span
+                                                    id={`tooltip-summary-rb-${idx}`}
+                                                    style={{
+                                                      display: "inline-block",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={18}
+                                                      color="#F04438"
+                                                    />
+                                                  </span>
+
+                                                  <UncontrolledTooltip
+                                                    target={`tooltip-summary-rb-${idx}`}
+                                                    placement="top"
+                                                    style={{
+                                                      border: "2px",
+                                                      borderStyle: "solid",
+                                                      borderColor: "#262A33",
+                                                      fontSize: "14px",
+                                                    }}
+                                                  >
+                                                    Confidence Score :{" "}
+                                                    <span
+                                                      style={{
+                                                        color: "#F04438",
+                                                        fontStyle: "italic",
+                                                      }}
+                                                    >
+                                                      N/A
+                                                    </span>
+                                                  </UncontrolledTooltip>
+                                                </>
+                                              )}
+                                            </span>
                                           </h5>
                                         </div>
                                       </div>
@@ -2801,154 +2954,9 @@ function Preview() {
                                         </li>
                                       );
                                     })}
-                                    {/* <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 1</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 10%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $175.5</h6>
-                                </div>
-                            </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 2</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 15%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $165.8</h6>
-                                </div>
-                            </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 3</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 20%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $156</h6>
-                                </div>
-                            </div>
-                          </li> */}
                                   </ul>
                                 );
                               })}
-                              {/* <ul className="acc-list-data tiered">
-                          <li className="hdr">
-                            <div className="d-flex justify-content-between">
-                                <div className="ndc-num">
-                                    <span>NDC Number</span>
-                                    <h5>65483-1021-30</h5>
-                                </div>
-                                <div className="wac-price">
-                                    <span>WAC Price</span>
-                                    <h5 className="text-end">$195</h5>
-                                </div>
-                            </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 1</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 10%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $175.5</h6>
-                                </div>
-                            </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 2</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 15%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $165.8</h6>
-                                </div>
-                            </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 3</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 20%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $156</h6>
-                                </div>
-                            </div>
-                          </li>
-                        </ul>
-                        <ul className="acc-list-data tiered">
-                          <li className="hdr">
-                            <div className="d-flex justify-content-between">
-                                <div className="ndc-num">
-                                    <span>NDC Number</span>
-                                    <h5>65483-2041-60</h5>
-                                </div>
-                                <div className="wac-price">
-                                    <span>WAC Price</span>
-                                    <h5 className="text-end">$425</h5>
-                                </div>
-                            </div>
-                          </li>
-                          {/* <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 1</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 10%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $180</h6>
-                                </div>
-                            </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 2</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 15%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $170</h6>
-                                </div>
-                            </div>
-                          </li>
-                          <li className="split-li">
-                            <div className="d-flex align-items-center justify-content-between tier-split">
-                                <div className="">
-                                    <h6>Tier 3</h6>
-                                </div>
-                                <div className="">
-                                    <h6><span>Discount </span>: 20%</h6>
-                                </div>
-                                <div>
-                                    <h6><span>Final Price</span> : $160</h6>
-                                </div>
-                            </div>
-                          </li> */}
-                              {/* </ul> */}
                             </AccordionBody>
                           </AccordionItem>
                         </Accordion>
@@ -2984,7 +2992,7 @@ function Preview() {
                         <p className="Comments-title">Comments</p>
                       </div>
                     </div>
-                    {commentsList?.length > 0 ?
+                    {commentsList?.length > 0 ? (
                       commentsList?.map((list) => {
                         return (
                           <div
@@ -3016,7 +3024,7 @@ function Preview() {
                                       </p>
                                       <p className="Last-seen-cust">
                                         {list?.created_at &&
-                                         formatMessageTime(list?.created_at) }
+                                          formatMessageTime(list?.created_at)}
                                       </p>
                                       <div className="cust-comments">
                                         <p>{list.comment}</p>
@@ -3031,10 +3039,15 @@ function Preview() {
                             </div>
                           </div>
                         );
-                      }):
-                      <div className="text-center mt-5" style={{color:"var(--text)"}}>
-                          No Comments Added
-                        </div>}
+                      })
+                    ) : (
+                      <div
+                        className="text-center mt-5"
+                        style={{ color: "var(--text)" }}
+                      >
+                        No Comments Added
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -3058,7 +3071,7 @@ function Preview() {
               <label for="start-date" class="modal-label text-capitalize">
                 {editEntitie?.key.replace(/_/g, " ")}
               </label>
-              {editEntitie?.key === "channel_partner_type" ? (
+              {editEntitie?.key === "document_type" ? (
                 <div>
                   <Select
                     options={docTypeOption}
@@ -3175,10 +3188,23 @@ function Preview() {
             </div>
           </ModalBody>
         </Modal>
-        <Modal isOpen={isTierWarning} centered zIndex={4000} className="edittierleve">
-          <span toggle={() => setIsTierWarning(!isTierWarning)} className="edit-tier-level-title">
+        <Modal
+          isOpen={isTierWarning}
+          centered
+          zIndex={4000}
+          className="edittierleve"
+        >
+          <div className="d-flex justify-content-between align-items-center px-4 py-3">
+            <div
+            
+            className="edit-tier-level-title"
+          >
             Edit Tier Level?
-          </span>
+          </div>
+          <div>
+            <X size={18} color="var(--text)" style={{cursor:'pointer'}} onClick={()=>setIsTierWarning(!isTierWarning)}/>
+          </div>
+          </div>
           <div className="edite-tierlevel-body">
             Editing the tier level will recalculate and regenerate the Tiered LI
             section. Would you like to continue?
@@ -3190,64 +3216,104 @@ function Preview() {
                 Cancel
               </button>
               <button class="save-btn" onClick={() => confirmEditTierLevl()}>
-                Yes, Confirm
+                Yes, Proceed
               </button>
             </div>
           </div>
         </Modal>
         <Modal isOpen={isTierEdit} centered zIndex={4000}>
-          <ModalHeader toggle={()=>setIsTierEdit(!isTierEdit)}>Edit Tier Level 0{editTierData?.tier_level}</ModalHeader>
+          <ModalHeader toggle={() => setIsTierEdit(!isTierEdit)}>
+            Edit Tier Level 0{editTierData?.tier_level}
+          </ModalHeader>
           <ModalBody>
             <div className="container">
               <div className="row">
                 <div className="col-6 mb-2">
                   <label>Purchase Volume Min</label>
                   <div>
-                    <input className="modal-input"
-                     value={editTierData?.volume_min}
-                      onChange={(e)=>setEditTierData({...editTierData,volume_min:e.target.value})}/>
+                    <input
+                      className="modal-input"
+                      value={editTierData?.volume_min}
+                      onChange={(e) =>
+                        setEditTierData({
+                          ...editTierData,
+                          volume_min: e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </div>
                 <div className="col-6 mb-2">
                   <label>Purchase Volume Max</label>
                   <div>
-                    <input className="modal-input" 
-                     value={editTierData?.volume_max}
-                       onChange={(e)=>setEditTierData({...editTierData,volume_max:e.target.value})}
-                     />
+                    <input
+                      className="modal-input"
+                      value={editTierData?.volume_max}
+                      onChange={(e) =>
+                        setEditTierData({
+                          ...editTierData,
+                          volume_max: e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </div>
                 <div className="col-4">
                   <label>Price Discount (%)</label>
                   <div>
-                    <input className="modal-input"
+                    <input
+                      className="modal-input"
                       value={editTierData?.discount_percentage}
-                      onChange={(e)=>setEditTierData({...editTierData,discount_percentage:e.target.value})}
-                      />
+                      onChange={(e) =>
+                        setEditTierData({
+                          ...editTierData,
+                          discount_percentage: e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </div>
                 <div className="col-4">
                   <label>Admin Fees (%)</label>
                   <div>
-                    <input className="modal-input" 
-                    value={editTierData?.admin_fee_percentage}
-                    onChange={(e)=>setEditTierData({...editTierData,admin_fee_percentage:e.target.value})}/>
+                    <input
+                      className="modal-input"
+                      value={editTierData?.admin_fee_percentage}
+                      onChange={(e) =>
+                        setEditTierData({
+                          ...editTierData,
+                          admin_fee_percentage: e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </div>
                 <div className="col-4">
                   <label>Rebate (%)</label>
                   <div>
-                    <input className="modal-input"
-                     value={editTierData?.rebate_percentage}
-                     onChange={(e)=>setEditTierData({...editTierData,rebate_percentage:e.target.value})}
-                     />
+                    <input
+                      className="modal-input"
+                      value={editTierData?.rebate_percentage}
+                      onChange={(e) =>
+                        setEditTierData({
+                          ...editTierData,
+                          rebate_percentage: e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </div>
                 <div className="col-12">
                   <label>Comments (optional)</label>
                   <div>
-                    <textarea className="modal-input" 
-                    onChange={(e)=>setEditTierData({...editTierData,comment:e.target.value})}
+                    <textarea
+                      className="modal-input"
+                      onChange={(e) =>
+                        setEditTierData({
+                          ...editTierData,
+                          comment: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -3255,11 +3321,11 @@ function Preview() {
               <div class="modal-actions">
                 <button
                   class="cancel-btn"
-                  onClick={()=>setIsTierEdit(!isTierEdit)}
+                  onClick={() => setIsTierEdit(!isTierEdit)}
                 >
                   Cancel
                 </button>
-                <button class="save-btn" onClick={()=>handleEditTierData()}>
+                <button class="save-btn" onClick={() => handleEditTierData()}>
                   Save Changes
                 </button>
               </div>

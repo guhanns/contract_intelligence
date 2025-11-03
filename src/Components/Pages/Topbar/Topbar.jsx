@@ -16,12 +16,17 @@ import lightInactive from "../../../images/topbar-icons/light-inactive.svg";
 import { useTranslation } from "react-i18next";
 import Avatar from "@mui/material/Avatar";
 import { useTheme } from "../../../Themecontext";
+import { useDispatch } from "react-redux";
+import { logUserLogout } from "../../redux/features/auditLogs";
 
 function Topbar() {
   const navigate = useNavigate();
+  const dispatch = useDispatch()
   const { t, i18n } = useTranslation();
   const { instance, accounts } = useMsal();
   const { theme, toogleTheme } = useTheme();
+
+  console.log(accounts)
 
   const [active, setActive] = useState(theme === "Light" ? "Light" : "Dark");
 
@@ -29,6 +34,10 @@ function Topbar() {
     instance.logoutRedirect({
       postLogoutRedirectUri: "https://app.intellicontract.ai.srm-tech.com/", // 🔁 Back to login page or home
     });
+    const username = accounts[0]?.name;
+    if (username) {
+      dispatch(logUserLogout(username));
+    }
   };
 
   return (
@@ -50,9 +59,9 @@ function Topbar() {
       </div> */}
 
         <span></span>
-        <div className="toggle-button-group ms-2">
+        <div className="toggle-button-group-mt ms-2">
           <button
-            className={`toggle-button ${theme === "Light" ? "active" : ""}`}
+            className={`toggle-button-mt ${theme === "Light" ? "active" : ""}`}
             onClick={() => theme !== "Dark" && toogleTheme()}
           >
             <span className="icon">
@@ -64,7 +73,7 @@ function Topbar() {
           </button>
 
           <button
-            className={`toggle-button ${theme === "Dark" ? "active" : ""}`}
+            className={`toggle-button-mt ${theme === "Dark" ? "active" : ""}`}
             onClick={() => theme !== "Light" && toogleTheme()}
           >
             <span className="icon">

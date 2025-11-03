@@ -82,7 +82,6 @@
    }
    .change-history-filter{
     border: 1px solid #1F242F;
-  
    }
 
   .search-container {
@@ -137,11 +136,11 @@ cursor: pointer;
 
 .button-group .clear-btn{
   padding: 8px 12px;
-  background-color:#161B26;
-  color:#CECFD2;
+  background-color:var(--clr-btn-chnge-page-btm-bg-colour);
+  color:var(--clr-btn-chnge-page-btm-txt-colour);
   border: none;
   border-radius: 8px;
-  border: 1px solid #333741;
+  border: 1px solid var(  --audit-border);
   margin-right: 20px;
   font-family:"Inter";
 font-weight: 600;
@@ -186,7 +185,7 @@ font-style: Semi Bold;
 font-size: 16px;
 line-height: 100%;
 vertical-align: middle;
-color: #F5F5F6;
+color: var( --clauses-added-header-color);
 margin-bottom: 0px;
 }
 
@@ -201,7 +200,7 @@ margin-bottom: 0px;
 }
 
 .clause-list li{
-  color:#F5F5F6 ;
+  color:var(--clauses-added-header-color) ;
   font-family:" Inter"!;
 font-weight: 400;
 font-style: "Regular";

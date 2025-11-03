@@ -74,7 +74,7 @@ function ChangeSummary() {
     
                 <div className="export-history-container">
                   <img src={exportimg} />
-                  <span className="title">Export Change History</span>
+                  <span className="title">Export Change Summary</span>
                 </div>
               </div>
     

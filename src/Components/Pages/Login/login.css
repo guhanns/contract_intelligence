@@ -85,6 +85,14 @@
       cursor: pointer;
     }
 
+    .checkbox-container.contract-list {
+      display: flex;
+      gap: 10px;
+      color: #d1d1d1;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
     .checkbox-container input[type="checkbox"] {
       display: none;
     }

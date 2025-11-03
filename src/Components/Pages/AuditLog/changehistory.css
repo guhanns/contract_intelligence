@@ -1,5 +1,5 @@
  .top-content-change-history{
-  border: 1px solid #1F242F ;
+  border: 1px solid var(--audit-border)!important ;
   padding: 15px;
 }
  .top-content-change-history .contract-changes{
@@ -19,7 +19,7 @@
     padding-top: 5px;
   }
   .history-filter-title{
-    color: #F5F5F6;
+    color:  var( --audit-title)!important;
     font-family:"Inter";
     font-weight: 600;
     font-size:16px;
@@ -27,7 +27,7 @@
     padding-top: 16px;
   }
   .sections-history .sec-history-title{
-    color: #F5F5F6;
+       color:  var( --audit-title)!important;
     font-family:"Inter";
     font-weight: 600;
     font-size: 14px;
@@ -50,14 +50,14 @@
    }
 
    .all .title{
-    color: #94969C;
+     color: var(--audit-filters-data)!important;
     font-family:"Inter";
     font-weight: 400;
     font-size: 14px;
     padding-left: 8px;
    }
    .section-one .title{
-    color: #94969C;
+  color: var(--audit-filters-data)!important;
     font-family:"Inter";
     font-weight: 400;
     font-size: 14px;
@@ -65,7 +65,7 @@
    }
 
      .section-two .title{
-    color:#94969C;
+ color: var(--audit-filters-data)!important;
     font-family:"Inter";
     font-weight: 400;
     font-size: 14px;
@@ -73,19 +73,38 @@
    }
 
    .section-three .title{
-    color: #94969C;
+  color: var(--audit-filters-data)!important;
     font-family:"Inter";
     font-weight: 400;
     font-size: 14px;
     padding-left: 8px;
    }
    .change-history-filter{
-    border: 1px solid #1F242F;
+    position: fixed;
+    top: 140px;
+    border: 1px solid var(--audit-border)!important;
+    height: calc(90vh - 60px);
+    overflow-y: scroll;
    }
 
-  .search-container {
-  position: relative;
+   .change-history-container{
+    position: relative;
+    height: calc(90vh - 60px);
+    overflow-y: scroll;
+    background: var(--contract-search-bar);
+    border: 1px solid var(--audit-border);
+   }
+   .export-history-container{
+    position: sticky;
+    top: 0;
+    padding: 12px;
+    background-color: var(--contract-search-bar);
+   }
+  .export-history-container .search-container {
+  position: sticky;
+  top: 0;
   padding-right: 32px;
+  margin: 0;
 
 }
 .active-user-sec .search-container {
@@ -103,12 +122,12 @@
 .search-container input {
   width: 320px;
   padding: 10px 12px 10px 40px;
-  border: 1px solid #333741;
+  border: 1px solid var(--audit-border)!important;
   border-radius: 8px;
   font-size: 14px;
   outline: none;
-  color: #85888E;
-  background-color: #0C111D;
+  color: var(--audit-seach-color);
+  background-color: var(--audit-search-input)!important;
 }
 .search-container{
   margin-top: 20px;
@@ -132,19 +151,17 @@ cursor: pointer;
   margin-top: 5px;
 }
 .changes-history-content-sec h3{
- color:#F5F5F6;
+ color:var(--change-history-h3-headeer);
  font-family:"Inter";
 font-weight: 500;
 font-style: Medium;
 font-size: 16px;
-padding-left: 32px;
-padding-top: 20px;
 }
 .changes-history-content-sec{
   margin-top: 20px;
 }
 .changes-history-content-sec .datas{
-  color: #F5F5F6;
+  color: var(--change-history-h3-headeer);
   list-style: none;
   margin-top: 15px;
 }
@@ -165,19 +182,27 @@ padding-right: 20px;
 .apply-filter-btn-summary .filter-btn{
   display: flex;
   justify-content: center;
-  border-top: 2px solid #1F242F;
+  border-top: 2px solid var(--audit-border)!important;
   margin-top: 20px;
 }
 .apply-filter-btn-summary .filter-btn{
   padding: 17px;
+  position: absolute;
+    bottom: 0px;
+    height: 50px;
+    background-color: var(--contract-bottom-filter);
+    border-top: 1px solid var(--contract-bottom-filter-border);
+    z-index: 10000;
+    width: 100%;
+    left: 0;
 }
 .apply-filter-btn-summary .clr-btn{
   padding: 8px 12px;
-  background-color:#161B26;
-  color:#CECFD2;
+  background-color:var(--clr-btn-chnge-page-btm-bg-colour);
+  color:var(--clr-btn-chnge-page-btm-txt-colour);
   border: none;
   border-radius: 8px;
-  border: 1px solid #333741;
+  border: 1px solid var(--audit-border)!important;
   margin-right: 20px;
   font-family:"Inter";
 font-weight: 600;
@@ -206,10 +231,38 @@ font-weight: 500;
 font-size:12px;
 padding:  4px 6px;
 border-radius: 16px;
-border: 1px solid #333741;
+border: 1px solid var(--audit-border)!important;
 background-color: #161B26;
 margin-left: 10px;
 }
+
+.contract-search-box.grid.history{
+  border:  1px solid var(--border);
+  border-radius: 0px;
+  height: calc(90vh - 60px);
+}
+
+.audit-list{
+  list-style-type: none;
+  padding-left: 10px;
+  margin-bottom: 20px;
+}
+
+.audit-no-list{
+  text-align: center;
+  color: var(--text);
+  margin-top: 170px;
+}
+
+.contract-search-box.grid.history .css-1p3m7a8-multiValue{
+  background-color: var(--contract-bottom-filter);
+  border: 1px solid var(--audit-border)!important;
+}
+
+.contract-search-box.grid.history .css-1p3m7a8-multiValue .css-9jq23d{
+  color: var(--text);
+}
+
 
 
 

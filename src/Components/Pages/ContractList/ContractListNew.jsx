@@ -38,6 +38,9 @@ import TierStructureSkeloton from "../../Skeleton-loading/TierStructureSkeloton"
 import ProductPricingDetails from "../../Skeleton-loading/ProductPricingDetails";
 import TierStructureSkeleton from "../../Skeleton-loading/TierStructureSkeloton";
 import TotalContracts from "../../Skeleton-loading/TotalContracts";
+import ContractDocuments from "../../Skeleton-loading/ContractDocuments";
+import upload_doc from "../../../images/upload_icons/upload_doc.svg";
+import purpleUpload from './../../../images/upload_icons/upload_doc_light1.svg';
 
 
 
@@ -246,6 +249,7 @@ function ContractListNew() {
     const dispatch = useDispatch()
     const { theme, toogleTheme } = useTheme();
     const [isLoading, setIsLoading] = useState(true);
+    const [isError,setIsError] = useState(false)
   const [contractList, setContractList] = useState([]);
   const [totalCount,setTotalCount] = useState(0)
   const [activeTab, setActiveTab] = useState(1);
@@ -253,6 +257,7 @@ function ContractListNew() {
   const [open, setOpen] = useState([]);
   const [active, setActive] = useState("grid");
   const [priceMaxi,setPriceMaxi] = useState(false)
+  const [offerMaxi,setofferMaxi]=useState(false)
   const [selectedData,setSelectedData] = useState([])
   const [activeContractTab, setActiveContractTab] = useState(null);
   const [showSelected,setShowSelected] = useState({})
@@ -329,7 +334,6 @@ function ContractListNew() {
       .catch((err) => {
         console.log(err);
         setIsLoading(false);
-        
       });
   };
 
@@ -415,6 +419,7 @@ function ContractListNew() {
         }
     }).catch((err)=>{
         console.log(err)
+         setIsError(true)
     })
   }
 
@@ -428,6 +433,21 @@ function ContractListNew() {
   const sendtoPreview =(contract,version)=>{
       navigate('/list/preview',{state:{contractNum:contract,version:version}})
     }
+
+  
+    const handleFileChange = (e, type) => {
+    const selectedFiles = Array.from(e.target.files);
+    if (!selectedFiles.length) return;
+
+    const newFiles = selectedFiles.map((file, index) => ({
+      id: Date.now() + index,
+      file,
+      type,
+      progress: 0,
+    }));
+
+   navigate('/list/upload',{state:{file:newFiles}})
+  };
 
   return (
     <Layouts>
@@ -471,9 +491,9 @@ function ContractListNew() {
                     </h3>
                   )}
 
-                  <div className="toggle-button-group ms-2">
+                  <div className="toggle-button-group-mt ms-2">
                     <button
-                      className={`toggle-button ${
+                      className={`toggle-button-mt ${
                         active === "grid" ? "active" : ""
                       }`}
                       onClick={() => setActive("grid")}
@@ -493,7 +513,7 @@ function ContractListNew() {
                       </span>
                     </button>
                     <button
-                      className={`toggle-button ${
+                      className={`toggle-button-mt ${
                         active === "doc" ? "active" : ""
                       }`}
                       onClick={() => setActive("doc")}
@@ -520,70 +540,89 @@ function ContractListNew() {
           {/* Doc view */}
           {active === "doc" && (
             <>
-              <div className="col-3 m-0 pe-0">
-                <div class="contract-search-box">
-                  <div className="search-box-head">
-                    <h3>Contract Documents</h3>
-                  </div>
-                  {/* <div className="search-box">
+              {isLoading ? (
+                <ContractDocuments />
+              ) : (
+                <>
+                  <div className="col-3 m-0 pe-0">
+                    <div class="contract-search-box">
+                      <div className="search-box-head">
+                        <h3>Contract Documents</h3>
+                      </div>
+                      {/* <div className="search-box">
                     <img src={serachImg} />
                     <input
                       className="contract-search-inp"
                       placeholder="Search"
                     />
                   </div> */}
-                  <div className="contract-list-scroll">
-                    {contractList?.length > 0 &&
-                      contractList?.map((list, index) => {
-                        return (
-                          <div
-                            className="contract-doc-list"
-                            key={index}
-                            style={{ cursor: "pointer" }}
-                          >
-                            <label class="checkbox-container">
-                              <input
-                                type="checkbox"
-                                onChange={() => addSelectContract(list)}
-                              />
-                              <span class="custom-checkbox"></span>
-                            </label>
-                            <div className="doc-name-id">
-                              <h5 className="name" title={list?.document_name}>
-                                {truncate(list?.document_name, { length: 48 })}
-                              </h5>
-                              <h5 className="id">{list?.contract_number}</h5>
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-9 ps-0">
-                {selectedData?.length > 0 ? (
-                  <>
-                    <div className="contract-head-menu p-0 pe-2 contract-nav">
-                      <div className="menu-head-2">
-                        <div className="menu-nav-list">
-                          {selectedData?.map((list) => {
+                      <div className="contract-list-scroll">
+                        {contractList?.length > 0 &&
+                          contractList?.map((list, index) => {
                             return (
                               <div
-                                className={`${
-                                  activeContractTab === list?.id ? "active" : ""
-                                }`}
-                                onClick={() => setActiveContractTab(list?.id)}
-                                title={list.document_name}
+                                className="contract-doc-list"
+                                key={index}
+                                style={{ cursor: "pointer" }}
                               >
-                                {truncate(list.document_name, {
-                                  length:
-                                    activeContractTab === list?.id ? 40 : 20,
-                                })}
+                                <div>
+                                  <label class="checkbox-container">
+                                  <input
+                                    type="checkbox"
+                                    onChange={() => addSelectContract(list)}
+                                  />
+                                  <div class="custom-checkbox"></div>
+                                  <div className="doc-name-id">
+                                    <h5
+                                      className="name"
+                                      title={list?.document_name}
+                                    >
+                                      {truncate(list?.document_name, {
+                                        length: 36,
+                                      })}
+                                    </h5>
+                                    <h5 className="id">
+                                      {list?.contract_number}
+                                    </h5>
+                                  </div>
+                                </label>
+                                </div>
                               </div>
                             );
                           })}
-                          {/* <div className="active">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-9 ps-0">
+                    {selectedData?.length > 0 ? (
+                      <>
+                        <div className="contract-head-menu p-0 pe-2 contract-nav">
+                          <div className="menu-head-2">
+                            <div className="menu-nav-list">
+                              {selectedData?.map((list) => {
+                                return (
+                                  <div
+                                    className={`${
+                                      activeContractTab === list?.id
+                                        ? "active"
+                                        : ""
+                                    }`}
+                                    onClick={() =>
+                                      setActiveContractTab(list?.id)
+                                    }
+                                    title={list.document_name}
+                                  >
+                                    {truncate(list.document_name, {
+                                      length:
+                                        activeContractTab === list?.id
+                                          ? 40
+                                          : 20,
+                                    })}
+                                  </div>
+                                );
+                              })}
+                              {/* <div className="active">
                         Premier Health Alliance Agreement
                       </div>
                       <div>Premier Health Alliance Agreement</div>
@@ -591,295 +630,334 @@ function ContractListNew() {
                       <div className="last">
                         Premier Health Alliance Agreement
                       </div> */}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <div className="row me-0 hide-price">
-                      <div className={`col-6 pe-0 ${priceMaxi ? "close" : ""}`}>
-                        {isLoading ? (
-                          <ContractDetailsSkeleton />
-                        ) : (
-                          
-                            <div class="contract-details-box">
-                              <div className="details-head">
-                                <h3>Contract Details</h3>
-                                <div>{/* <img src={maximize} /> */}</div>
-                              </div>
-                              <div className="contract-acc-box list-view">
-                                <Accordion
-                                  open={accordionOpen}
-                                  toggle={toggleAccordion}
-                                  flush
-                                  className="contract-acc"
-                                >
-                                  <AccordionItem>
-                                    <AccordionHeader targetId={1}>
-                                      Contract Offer
-                                    </AccordionHeader>
-                                    <AccordionBody accordionId={1}>
-                                      {showSelected?.contracts?.length > 0 && (
-                                        <tbody className="acc-list-data">
-                                          {Object.entries(
-                                            showSelected.contracts[0]
-                                          ).map(([key, value], index) =>
-                                            key !== "id" &&
-                                            key !== "created_at" &&
-                                            key !== "updated_at" &&
-                                            key !== "adjust_by" &&
-                                            key !== "category_pricing" &&
-                                            key !== "price_list_name" &&
-                                            key !== "pricing_method" ? (
-                                              <tr key={index}>
-                                                <td>
-                                                  <span className="text-capitalize">
-                                                    {key.replace(/_/g, " ")}
-                                                  </span>
-                                                </td>
-                                                <td className="ans">
-                                                  <span>{String(value)}</span>
-                                                </td>
-                                              </tr>
-                                            ) : (
-                                              ""
-                                            )
-                                          )}
-                                        </tbody>
-                                      )}
-                                    </AccordionBody>
-                                  </AccordionItem>
-                                  <AccordionItem>
-                                    <AccordionHeader targetId={2}>
-                                      Product Group
-                                    </AccordionHeader>
-                                    <AccordionBody accordionId={2}>
-                                      {showSelected?.contracts?.length > 0 && (
-                                        <tbody className="acc-list-data">
-                                          {Object.entries(
-                                            showSelected.contracts[0]
-                                          ).map(([key, value], index) =>
-                                            key === "adjust_by" ||
-                                            key === "category_pricing" ||
-                                            key === "price_list_name" ||
-                                            key === "pricing_method" ? (
-                                              <tr key={index}>
-                                                <td>
-                                                  <span className="text-capitalize">
-                                                    {key.replace(/_/g, " ")}
-                                                  </span>
-                                                </td>
-                                                <td className="ans">
-                                                  <span>{String(value)}</span>
-                                                </td>
-                                              </tr>
-                                            ) : (
-                                              ""
-                                            )
-                                          )}
-                                        </tbody>
-                                      )}
-                                    </AccordionBody>
-                                  </AccordionItem>
-                                </Accordion>
-                              </div>
-                            </div>
-                        )}
-                      </div>
-                      <div className={`col-6 ${priceMaxi ? "close" : ""}`}>
-                        {isLoading ? (
-                          <TierStructureSkeleton />
-                        ) : (
-                            <div class="contract-details-box right">
-                              <div className="details-head">
-                                <h3>Tier Structure</h3>
-                                <div>
-                                  <img src={maximize} />
-                                  {/* {theme==="Light"? <img src={maximizelight}/>:<img src={maximize}/>} */}
-                                </div>
-                              </div>
-                              <div className="contract-acc-box list-view">
-                                <table className="tier-table">
-                                  <thead>
-                                    <th className="sno">Tier</th>
-                                    <th>Vol Minimum</th>
-                                    <th>Vol Maximum</th>
-                                    <th>Discount</th>
-                                    <th>Admin Fee</th>
-                                    <th>Rebate</th>
-                                  </thead>
-                                  <tbody>
-                                    {showSelected?.tier_structures?.length >
-                                      0 &&
-                                      showSelected?.tier_structures?.map(
-                                        (tier) => {
-                                          return (
-                                            <tr>
-                                              <td className="sno">
-                                                {tier?.tier_level}
-                                              </td>
-                                              <td>
-                                                {tier?.volume_min
-                                                  ? `$${tier.volume_min}`
-                                                  : "No limit"}
-                                              </td>
-                                              <td>
-                                                {tier?.volume_max
-                                                  ? `$${tier.volume_max}`
-                                                  : "No limit"}
-                                              </td>
-                                              <td>
-                                                {tier?.discount_percentage}%
-                                              </td>
-                                              <td>
-                                                {tier?.admin_fee_percentage}%
-                                              </td>
-                                              <td>
-                                                {tier?.rebate_percentage}%
-                                              </td>
-                                            </tr>
-                                          );
-                                        }
-                                      )}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                        )}
-                      </div>
-                      <div className="col-12">
-                        {isLoading ? (
-                          <ProductPricingDetails />
-                        ) : (
-                          <div
-                            class={`pricing-table-box ${
-                              priceMaxi ? "inc" : ""
-                            }`}
-                          >
-                            <div className="details-head">
-                              <h3>Product Pricing Table</h3>
-                              <div className="opt-btn">
-                                <span
-                                  onClick={
-                                    showSelected?.products?.length > 0 &&
-                                    handleHideAll
-                                  }
-                                >
-                                  <img
-                                    src={open.length > 0 ? eyeCrossImg : eye}
-                                  />
-                                  {open.length > 0
-                                    ? "Hide All Tier Details"
-                                    : "View All Tier Details"}
-                                </span>
-                                <img
-                                  src={
+                        <div className="row me-0 hide-price">
+                          <div className={`${offerMaxi ?'col-12 ':'col-6'} contractdetails pe-0 ${priceMaxi ? "close" :  offerMaxi ? "inc" : ""}`}>
+                            {isLoading ? (
+                              <ContractDetailsSkeleton />
+                            ) : (
+                              <div class="contract-details-box">
+                                <div className="details-head">
+                                  <h3>Contract Details</h3>
+                                  <div>{/* <img src={maximize} /> */}</div>
+
+                                  <div><img     src={
                                     priceMaxi
                                       ? theme === "Dark"
                                         ? minimizeDark
                                         : minimize
                                       : maximize
-                                  }
-                                  onClick={() => setPriceMaxi(!priceMaxi)}
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <div className="product-table-container">
-                                <table className="product-tier-table">
-                                  <thead>
-                                    <tr className="head-sticky">
-                                      <th width={"20%"}>NDC Number</th>
-                                      <th>Product Number</th>
-                                      <th>Size</th>
-                                      <th>WAC Price</th>
-                                    </tr>
-                                  </thead>
-                                </table>
-                                {showSelected?.products?.length > 0 &&
-                                  showSelected?.products?.map((item, index) => (
-                                    <Accordion
-                                      key={index}
-                                      open={open}
-                                      toggle={() => toggle(`item-${index}`)}
-                                      className="product-accordion"
-                                    >
-                                      <AccordionItem>
-                                        <AccordionHeader
-                                          targetId={`item-${index}`}
-                                          className="product-header"
-                                        >
-                                          <div
-                                            className="product-header-cell"
-                                            style={{ width: "25%" }}
-                                          >
-                                            {item?.ndc_number}
-                                          </div>
-                                          <div
-                                            className="product-header-cell"
-                                            style={{ width: "25%" }}
-                                          >
-                                            {item?.product_name}
-                                          </div>
-                                          <div
-                                            className="product-header-cell"
-                                            style={{ width: "25%" }}
-                                          >
-                                            {item?.size}
-                                          </div>
-                                          <div className="product-header-cell">
-                                            {item?.wac_price}
-                                          </div>
-                                        </AccordionHeader>
-                                        <AccordionBody
-                                          accordionId={`item-${index}`}
-                                        >
-                                          {item?.tiers?.length > 0 ? (
-                                            <table className="product-tier-table">
-                                              <thead>
-                                                <tr className="price-th">
-                                                  <th>Tier</th>
-                                                  <th>Discount</th>
-                                                  <th>Final Price</th>
-                                                  <th>Savings</th>
+                                  }  onClick={() =>setofferMaxi(!offerMaxi)} /></div>
+                                </div>
+                                <div className="contract-acc-box list-view">
+                                  <Accordion
+                                    open={accordionOpen}
+                                    toggle={toggleAccordion}
+                                    flush
+                                    className="contract-acc"
+                                  >
+                                    <AccordionItem>
+                                      <AccordionHeader targetId={1}>
+                                        Contract Offer
+                                      </AccordionHeader>
+                                      <AccordionBody accordionId={1}>
+                                        {showSelected?.contracts?.length >
+                                          0 && (
+                                          <tbody className="acc-list-data">
+                                            {Object.entries(
+                                              showSelected.contracts[0]
+                                            ).map(([key, value], index) =>
+                                              key !== "id" &&
+                                              key !== "created_at" &&
+                                              key !== "updated_at" &&
+                                              key !== "adjust_by" &&
+                                              key !== "category_pricing" &&
+                                              key !== "price_list_name" &&
+                                              key !== "pricing_method" ? (
+                                                <tr key={index}>
+                                                  <td>
+                                                    <span className="text-capitalize">
+                                                      {key.replace(/_/g, " ")}
+                                                    </span>
+                                                  </td>
+                                                  <td className="ans">
+                                                    <span>{String(value)}</span>
+                                                  </td>
                                                 </tr>
-                                              </thead>
-                                              <tbody>
-                                                {item?.tiers?.map((tier, i) => (
-                                                  <tr key={i}>
-                                                    <td>{tier?.tier}</td>
-                                                    <td>{tier?.discount}</td>
-                                                    <td>{tier?.final_price}</td>
-                                                    <td className="savings-amount">
-                                                      {tier?.savings}
-                                                    </td>
-                                                  </tr>
-                                                ))}
-                                              </tbody>
-                                            </table>
-                                          ) : (
-                                            <div className="no-tier-message">
-                                              No tier pricing available.
-                                            </div>
-                                          )}
-                                        </AccordionBody>
-                                      </AccordionItem>
-                                    </Accordion>
-                                  ))}
+                                              ) : (
+                                                ""
+                                              )
+                                            )}
+                                          </tbody>
+                                        )}
+                                      </AccordionBody>
+                                    </AccordionItem>
+                                    <AccordionItem>
+                                      <AccordionHeader targetId={2}>
+                                        Product Group
+                                      </AccordionHeader>
+                                      <AccordionBody accordionId={2}>
+                                        {showSelected?.contracts?.length >
+                                          0 && (
+                                          <tbody className="acc-list-data">
+                                            {Object.entries(
+                                              showSelected.contracts[0]
+                                            ).map(([key, value], index) =>
+                                              key === "adjust_by" ||
+                                              key === "category_pricing" ||
+                                              key === "price_list_name" ||
+                                              key === "pricing_method" ? (
+                                                <tr key={index}>
+                                                  <td>
+                                                    <span className="text-capitalize">
+                                                      {key.replace(/_/g, " ")}
+                                                    </span>
+                                                  </td>
+                                                  <td className="ans">
+                                                    <span>{String(value)}</span>
+                                                  </td>
+                                                </tr>
+                                              ) : (
+                                                ""
+                                              )
+                                            )}
+                                          </tbody>
+                                        )}
+                                      </AccordionBody>
+                                    </AccordionItem>
+                                  </Accordion>
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
-                        )}
+                          <div className={`col-6 tierstructure ${priceMaxi ? "close" :offerMaxi ? "close": ""}`}>
+                            {isLoading ? (
+                              <TierStructureSkeleton />
+                            ) : (
+                              <div class="contract-details-box right">
+                                <div className="details-head">
+                                  <h3>Tier Structure</h3>
+                                  {/* <div>
+                                  <img src={maximize} />
+                                </div> */}
+                                  {/* {theme==="Light"? <img src={maximizelight}/>:<img src={maximize}/>} */}
+                                </div>
+                                <div className="contract-acc-box list-view">
+                                  <table className="tier-table">
+                                    <thead>
+                                      <th className="sno">Tier</th>
+                                      <th>Vol Minimum</th>
+                                      <th>Vol Maximum</th>
+                                      <th>Discount</th>
+                                      <th>Admin Fee</th>
+                                      <th>Rebate</th>
+                                    </thead>
+                                    <tbody>
+                                      {showSelected?.tier_structures?.length >
+                                        0 &&
+                                        showSelected?.tier_structures?.map(
+                                          (tier) => {
+                                            return (
+                                              <tr>
+                                                <td className="sno">
+                                                  {tier?.tier_level}
+                                                </td>
+                                                <td>
+                                                  {tier?.volume_min
+                                                    ? `$${tier.volume_min}`
+                                                    : "No limit"}
+                                                </td>
+                                                <td>
+                                                  {tier?.volume_max
+                                                    ? `$${tier.volume_max}`
+                                                    : "No limit"}
+                                                </td>
+                                                <td>
+                                                  {tier?.discount_percentage}%
+                                                </td>
+                                                <td>
+                                                  {tier?.admin_fee_percentage}%
+                                                </td>
+                                                <td>
+                                                  {tier?.rebate_percentage}%
+                                                </td>
+                                              </tr>
+                                            );
+                                          }
+                                        )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="col-12">
+                            {isLoading ? (
+                              <ProductPricingDetails />
+                            ) : (
+                               <div
+                            class={`pricing-table-box ${
+                              priceMaxi ? "inc" : offerMaxi ?"close":""
+                            }`}
+                          >
+                                <div className="details-head">
+                                  <h3>Product Pricing Table</h3>
+                                  <div className="opt-btn">
+                                    <span
+                                      onClick={
+                                        showSelected?.products?.length > 0 &&
+                                        handleHideAll
+                                      }
+                                    >
+                                      <img
+                                        src={
+                                          open.length > 0 ? eyeCrossImg : eye
+                                        }
+                                      />
+                                      {open.length > 0
+                                        ? "Hide All Tier Details"
+                                        : "View All Tier Details"}
+                                    </span>
+                                    <img
+                                      src={
+                                        priceMaxi
+                                          ? theme === "Dark"
+                                            ? minimizeDark
+                                            : minimize
+                                          : maximize
+                                      }
+                                      onClick={() => setPriceMaxi(!priceMaxi)}
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="product-table-container">
+                                    <table className="product-tier-table">
+                                      <thead>
+                                        <tr className="head-sticky">
+                                          <th width={"20%"}>NDC Number</th>
+                                          <th>Product Number</th>
+                                          <th>Size</th>
+                                          <th>WAC Price</th>
+                                        </tr>
+                                      </thead>
+                                    </table>
+                                    {showSelected?.products?.length > 0 &&
+                                      showSelected?.products?.map(
+                                        (item, index) => (
+                                          <Accordion
+                                            key={index}
+                                            open={open}
+                                            toggle={() =>
+                                              toggle(`item-${index}`)
+                                            }
+                                            className="product-accordion"
+                                          >
+                                            <AccordionItem>
+                                              <AccordionHeader
+                                                targetId={`item-${index}`}
+                                                className="product-header"
+                                              >
+                                                <div
+                                                  className="product-header-cell"
+                                                  style={{ width: "25%" }}
+                                                >
+                                                  {item?.ndc_number}
+                                                </div>
+                                                <div
+                                                  className="product-header-cell"
+                                                  style={{ width: "25%" }}
+                                                >
+                                                  {item?.product_name}
+                                                </div>
+                                                <div
+                                                  className="product-header-cell"
+                                                  style={{ width: "25%" }}
+                                                >
+                                                  {item?.size}
+                                                </div>
+                                                <div className="product-header-cell">
+                                                  {item?.wac_price}
+                                                </div>
+                                              </AccordionHeader>
+                                              <AccordionBody
+                                                accordionId={`item-${index}`}
+                                              >
+                                                {item?.tiers?.length > 0 ? (
+                                                  <table className="product-tier-table">
+                                                    <thead>
+                                                      <tr className="price-th">
+                                                        <th>Tier</th>
+                                                        <th>Discount</th>
+                                                        <th>Final Price</th>
+                                                        <th>Savings</th>
+                                                      </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                      {item?.tiers?.map(
+                                                        (tier, i) => (
+                                                          <tr key={i}>
+                                                            <td>
+                                                              {tier?.tier}
+                                                            </td>
+                                                            <td>
+                                                              {tier?.discount}
+                                                            </td>
+                                                            <td>
+                                                              {
+                                                                tier?.final_price
+                                                              }
+                                                            </td>
+                                                            <td className="savings-amount">
+                                                              {tier?.savings}
+                                                            </td>
+                                                          </tr>
+                                                        )
+                                                      )}
+                                                    </tbody>
+                                                  </table>
+                                                ) : (
+                                                  <div className="no-tier-message">
+                                                    No tier pricing available.
+                                                  </div>
+                                                )}
+                                              </AccordionBody>
+                                            </AccordionItem>
+                                          </Accordion>
+                                        )
+                                      )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                      {
+                        isError ?<div className="contract-list-err">
+                        <h4>Data Load Error</h4>
+                        <h6>We couldn’t fetch contract details. Refresh or try again later.</h6>
+                      
+                      </div> :<div className="no-contract-status">
+                        <div className="text-center">
+                          No Contract Selected
+                          <p>
+                            Select two or more contracts to see the overview
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="no-contract-status">
-                    <div className="text-center">
-                      No Contract Selected
-                      <p>Select two or more contracts to see the overview</p>
-                    </div>
+                      }
+                      
+                      </>
+                      
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </>
           )}
           {/* Grid View */}
@@ -1363,12 +1441,42 @@ function ContractListNew() {
                         );
                       })
                     ) : (
+
+                      
                       <div
-                        className={`text-center my-5 ${
-                          theme === "Dark" ? "text-white" : "text-dark"
-                        }`}
+                        className='contract-list-err'
                       >
-                        No Results Found
+                        {
+                          isError ? <>
+                          <h4>We couldn’t load your contracts</h4>
+                        <h6>Please refresh the page or try again later.</h6>
+                          </> : <>
+                            {
+                              !isLoading && !isError && 
+                               <>
+                          <h4>No Contract Found</h4>
+                        <h6>Try adjusting your filters or upload a new contract.</h6>
+                        <div class="upload-box contract-files-upload">
+                                    <label for="contractUpload" class="upload-area" style={{height:50}}>
+                                      <img src={theme==="Dark"? upload_doc :purpleUpload} className="upload-img"/>
+                                      <span class="text-white-50">
+                                        <u className="dottedbox-upload-content">Upload Contract Documents</u>
+                                      </span>
+                                      <input
+                                        type="file"
+                                        id="contractUpload"
+                                        class="d-none upload-input"
+                                        accept="application/pdf"
+                                        multiple
+                                        onChange={(e) => handleFileChange(e, "contract")}
+                                      />
+                                    </label>
+                                  </div>
+                          </>
+                            }
+                          </>
+                        }
+                        
                       </div>
                     )}
 

@@ -19,6 +19,7 @@ import ContractList from "./Components/Pages/ContractList/ContractList";
 import ContractListNew from "./Components/Pages/ContractList/ContractListNew";
 import Comparison from "./Components/Pages/Comparison/Comparison";
 import AuditLog from "./Components/Pages/AuditLog/AuditLog";
+import Restatement from "./Components/Pages/Restatement/Restatement";
 
 const dashboardRoutes = [
   {
@@ -225,6 +226,27 @@ const AuditRouters = [
   
 ]
 
+const RestatementRouter = [
+ { 
+  path: "/restatement",
+  handle: {
+      crumb: () => (
+        <NavLink to="/restatement" className="breadcrumb-link">
+          Restatement
+        </NavLink>
+      ),
+      activeMenuId: "restatement",
+    },
+  children: [
+      {
+        index: true,
+        element: <Restatement/>,
+      },
+    ],
+  },
+  
+]
+
 export const router = createBrowserRouter(
   [
     // Public Routes
@@ -254,7 +276,8 @@ export const router = createBrowserRouter(
             contractRouters,
             chatRouters,
             comparisonRouter,
-            AuditRouters
+            AuditRouters,
+            RestatementRouter
           ),
           errorElement: <ErrorBoundary />,
         },

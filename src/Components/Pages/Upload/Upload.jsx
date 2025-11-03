@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Layouts from "../Layouts/Layouts";
 import "./upload.css";
 import upload_doc from "../../../images/upload_icons/upload_doc.svg";
 import trash from "../../../images/icons/trash-01.svg";
-import uploadImg from "../../../images/icons/upload.svg";
+// import uploadImg from "../../../images/icons/upload.svg";
 import fileImg from "../../../images/icons/contract-file.svg";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import request, { NodeURL } from "../../../api/api";
 import toast from "react-hot-toast";
 import axios from "axios";
@@ -16,10 +16,12 @@ import filelight from './../../../images/upload_icons/fileLight.svg'
 import filedark from './../../../images/upload_icons/fileDark.svg'
 import trashdark from'./../../../images/upload_icons/trashDark.svg'
 import trashlight from'./../../../images/upload_icons/trashLight.svg'
+import uploadImg from "./../../../images/icons/upload-icon-intelli.svg";
 import { useMsal } from "@azure/msal-react";
 
 function Upload() {
   const navigate = useNavigate();
+  const location = useLocation()
   const [files, setFiles] = useState([]);
   const [isUpload,setIsUpload] = useState(false)
     const { theme, toogleTheme } = useTheme();
@@ -34,6 +36,25 @@ function Upload() {
     price: 0,
     contract: 0,
   });
+
+  useEffect(()=>{
+    if(location?.state?.file){
+
+      setFiles(location?.state?.file)
+      location?.state?.file.forEach((fileObj) => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 5;
+        setFiles((prevFiles) =>
+          prevFiles.map((f) => (f.id === fileObj.id ? { ...f, progress } : f))
+        );
+        if (progress >= 100) clearInterval(interval);
+      }, 200);
+    });
+    }
+  },[location?.state?.file])
+
+  console.log(files)
 
 
   const handleFileChange = (e, type) => {
@@ -164,7 +185,7 @@ const handleUpload = async () => {
             <label for="contractUpload" class="upload-area" style={{height:50}}>
               <img src={theme==="Dark"? upload_doc :purpleUpload} className="upload-img"/>
               <span class="text-white-50">
-                <u className="dottedbox-upload-content">Upload Contract Documents</u>
+                <span className="dottedbox-upload-content">Upload Contract Documents</span>
               </span>
               <input
                 type="file"

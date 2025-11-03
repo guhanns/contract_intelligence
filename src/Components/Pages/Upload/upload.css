@@ -31,6 +31,10 @@
   background-color: var(--upload-box-bg-color);
 }
 
+.upload-box.contract-files-upload{
+    width: 20%;
+}
+
 .upload-box:hover{
     background-color:var(--upload-box-hover-background-color);
 }

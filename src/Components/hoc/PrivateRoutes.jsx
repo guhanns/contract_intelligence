@@ -1,6 +1,6 @@
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
-import toast from 'react-hot-toast';
 import { useLocation, Navigate, Outlet, useMatches } from 'react-router-dom';
+
 
 export default function PrivateRoutes() {
   const location = useLocation();
@@ -9,10 +9,6 @@ export default function PrivateRoutes() {
   const meta = useMatches().find((match) => match.pathname === location.pathname)?.handle;
 
 //   const { auth, authData } = useSelector((state) => state.loginData);
-
-  // if (!isAuthenticated && accounts.length<=0) {
-  //   return <Navigate to="/" state={{ from: location.pathname }} replace />;
-  // }
 
   // Even though we check permissions for the subadmin in CheckPermission hoc some routes has nested in the permissioned routes which in some conditions the team members are not allowed
   // So in that case this condition will prevent the team members from accessing the page

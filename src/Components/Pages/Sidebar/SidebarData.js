@@ -16,6 +16,14 @@ import uploadlight from './../../../images/sidebar_icons/Upload-light.svg'
 import uploadlightsel from'./../../../images/sidebar_icons/Upload-light-selected.svg'
 import ailight from './../../../images/sidebar_icons/Stars-light.svg'
 import ailightsel from './../../../images/sidebar_icons/stars-chat.svg'
+import restatedarkns from './../../../images/sidebar_icons/clock-rewind.svg'
+import restatedarksel from './../../../images/sidebar_icons/clock-rewind-drksel.svg'
+import restatelightns from './../../../images/sidebar_icons/clock-rewind-lght-ns.svg'
+import clockrewindselect from './../../../images/sidebar_icons/clock-rewind-select.svg'
+import gitflow from './../../../images/sidebar_icons/Git-Flow.svg'
+import gitflowlight from './../../../images/sidebar_icons/Git-Flow-light.svg'
+import gitflownormal from './../../../images/sidebar_icons/Git-Flow-dark-simple.svg'
+import gitflowselectdark from './../../../images/sidebar_icons/Git-Flow-dark-select.svg'
 export const SidebarData =[
     // {
     //     navItem: 'Dashboard',
@@ -68,5 +76,29 @@ export const SidebarData =[
         link: '/chat',
         bgShade: 'linear-gradient(to right,rgb(0, 137, 249),rgb(0, 55, 255))',
       },
+      {
+       navItem: '',
+        id: 'audit',
+        // show: false,
+        img:  restatedarksel,
+        imgLight:restatelightns,
+        imgSelected: restatedarkns,
+        imgLightSelected:clockrewindselect,
+        link: '/audit',
+        bgShade: 'linear-gradient(to right,rgb(0, 137, 249),rgb(0, 55, 255))',
+      },
+      // {
+      //  navItem: '',
+      //   id: 'restatement',
+      //   // show: false,
+      //   img: gitflow,
+      //   imgLight: gitflowlight,
+      //   imgSelected:gitflownormal ,
+      //   imgLightSelected: gitflowselectdark ,
+      //   link: '/restatement',
+      //   bgShade: 'linear-gradient(to right,rgb(0, 137, 249),rgb(0, 55, 255))',
+      // }
+      
      
 ]
+

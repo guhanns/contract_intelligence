@@ -1,17 +1,20 @@
 .audit-header-container{
+  position: sticky;
+  top: 80px;
+  width: 100%;
     padding: 10px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #2f2f2f;
+   background: var(--contract-search-bar);
 }
 
 .btn-group-tabs {
   display: inline-flex;
-  border: 1px solid #2f2f2f;
+ border: 1px solid var(--audit-border)!important;
   border-radius: 8px;
   overflow: hidden;
-  background-color: #1e1e1e;
+   background-color: var( --audit-btngroup);
 }
 
 .btn-group-tabs__button {
@@ -23,22 +26,43 @@
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 }
+.btn-group-tabs__button{
+  background-color: var( --audit-btngroup);
+  color: var(--audit-normal-font);
+    font-family:"Inter";
+   font-weight: 600;
+font-size:14px;
+border: 1px solid var(--audit-border)!important;
+}
 
 .btn-group-tabs__button.active {
-  background-color: #2c2c2c;
-  color: #ffffff;
+  background-color: var( --audit-btn-active);
+  color:var( --audit-btn-font);
+  font-family:"Inter";
+font-weight: 600;
+font-size:14px;
+
+
 }
 
 .btn-group-tabs__button:hover {
-  background-color: #2a2a2a;
-  color: #ffffff;
+  background-color: var( --audit-btn-active);
+  color: var(  --audit-btn-font);
 }
 
 .btn-group-tabs__button:not(:last-child) {
   border-right: 1px solid #2f2f2f;
 }
 
-
 .audit-main-section{
     overflow: hidden;
+    height: calc(90vh - 60px);
+}
+.audit-head-left{
+  color: var( --audit-title);
+  font-family:"Inter";
+font-weight: 500;
+font-size: 20px;
+
+
 }

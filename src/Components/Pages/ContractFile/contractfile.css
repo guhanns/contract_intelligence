@@ -1,6 +1,6 @@
 
 .contract-file-list{
-    padding: 8px 20px;
+   padding: 15px 20px;
     position: fixed;
     top: 80px;
     bottom: 10px;
@@ -123,7 +123,7 @@ padding: 12px;
 color: #94969C;
 }
 .Table-contract-list .doc-box{
-width:250px;
+width:25%;
 height: 44px;
 gap: 12px;
 padding: 12px;
@@ -134,7 +134,7 @@ text-align: left;
 }
 
 .Table-contract-list .id-box{
-width: 170px;
+width: 10%;
 height: 44px;
 gap: 12px;
 padding: 12px;
@@ -144,7 +144,7 @@ color: var(--contract-list-table-color);
 }
 
 .Table-contract-list .type-box{
-width: 110px;
+width: 10%;
 height: 44px;
 gap: 12px;
 padding: 12px;
@@ -153,7 +153,7 @@ color: var(--contract-list-table-color);
   background-color: transparent;
 }
 .Table-contract-list .ver-box{
-    width: 120px;
+    width: 10%;
 height: 44px;
 padding: 12px;
 color: var(--contract-list-table-color);
@@ -161,7 +161,7 @@ color: var(--contract-list-table-color);
   background-color: transparent;
 }
 .Table-contract-list .status-box{
-    width: 150px;
+    width: 20%;
 height: 44px;
 padding: 12px;
 color: var(--contract-list-table-color);
@@ -265,6 +265,7 @@ margin: 8px;
 
 .Table-contract-list .contract-result-list{
     cursor: pointer;
+    background-color: var(--table-bg-initial-original);
 }
 
 .Table-contract-list .contract-result-list:hover{
@@ -289,6 +290,23 @@ margin: 8px;
     font-weight: 500;
     padding: 2px 8px;
     border-radius: 8px;
+}
+
+.contract-list-err{
+    text-align: center;
+    margin-top: 150px;
+}
+
+.contract-list-err h4{
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.contract-list-err h6{
+    color: var(--text-teritary);
+    font-size: 14px;
+    font-weight: 400;
 }
 
 

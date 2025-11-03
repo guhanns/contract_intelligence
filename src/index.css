@@ -208,7 +208,7 @@
 
 :root[data-theme="Light"] {
   --white-bg:#FFFFFF;
-  --bg: #FBF0FF;
+  --bg: #FFFFFF;
    --bg-primary:#F9FAFB;
   --bg-secondary:#FFFFFF;
   --bg-secondary2:#F9FAFB;
@@ -455,15 +455,50 @@
 --modal-bg-explain:#ffffff;
 --modal-title-text-color:#000000;
 --contract-comment-title:#FFFFFF;
-  --contract-comment-title-head:#101828;
-  --contract-comment-title-border:#D0D5DD;
-   --contract-comment-body:#FFFFFF;
-    --contract-body-title-name-of-cust:#101828;
-    --contract-comment-yesterday:#475467;
-      --contract-comment-cust:#FFFFFF;
-       --contract-comment-cust-para:#101828;
-          --contract-comment-cust-para-border:#E4E7EC;
-          --border-ppt-color:#E4E7EC;
+--contract-comment-title-head:#101828;
+--contract-comment-title-border:#D0D5DD;
+--contract-comment-body:#FFFFFF;
+--contract-body-title-name-of-cust:#101828;
+--contract-comment-yesterday:#475467;
+--contract-comment-cust:#FFFFFF;
+--contract-comment-cust-para:#101828;
+--contract-comment-cust-para-border:#E4E7EC;
+--border-ppt-color:#E4E7EC;
+--table-bg-initial-original:#ffffff;
+ --contract-details-table: #FFFFFF;
+ --contract-hover-edit:#FFFFFF;
+  --edit-tier-level-title:#101828;
+  --tier-level-bodycontents:#344054;
+  --restatement-title:#101828;
+    --restatement-border-bottom:#E4E7EC;
+     --restatement-base-title:#101828;
+     --restatement-background-table:#FFFFFF;
+      --restatement-background-title-table: #F2F4F7;
+      --restatement-pdf-title:#101828;
+      --restatement-datas:#475467;
+      --restatement-border:#E4E7EC;
+       --restatement-hover:#F9FAFB;
+       --restatement-input-bg:#FFFFFF;
+             --restatement-input-border:#D0D5DD ;
+              --audit-title: #101828;
+              --audit-filters-data:#667085;
+                --audit-border:#E4E7EC;
+                --audit-btngroup:#FFFFFF;
+                   --audit-btn-active:#F2F4F7;
+                   --audit-btn-font:#344054;
+                   --audit-normal-font:#344054;
+                   --audit-search-input:#FFFFFF;
+                     --audit-seach-color:#667085;
+                      --off-canves-icm-bg:#ffffff;
+  --sec-list-layout-bg:#ffffff;
+  --sec-list-layout-txt-colour:#182230;
+   --layou-header-txt-colour:#101828;
+  --change-history-h3-headeer:#101828;         
+           --clauses-added-header-color:#101828 ;     
+--clr-btn-chnge-page-btm-bg-colour:#FFFFFF;
+--clr-btn-chnge-page-btm-txt-colour:#344054;
+--contract-list-table-color:#101828;
+
 }
 
 :root[data-theme="Dark"] {
@@ -580,7 +615,7 @@
 --initial-tab1-active-font:#CECFD2;
 --prev-acc-box-btn-back:#161B26;
 --prev-accor-btn:#F5F5F6;
---Table-contract-list-contract-result-list-hover:#161B26;
+--Table-contract-list-contract-result-list-hover:#1f242f;
 --contract-result-list-status-box-review:#053321;
 --contract-result-list-status-box-review-border:#085D3A;
 --contract-result-list-status-box-review-txt-color:#75E0A7;
@@ -726,7 +761,40 @@
     --contract-comment-cust-para:#F5F5F6;
    --contract-comment-cust-para-border:#1F242F;
    --border-ppt-color:#1F242F;
-
+--table-bg-initial-original:#0c111d;
+--contract-details-table:#0C111D;
+--contract-hover-edit:#161B26;
+ --edit-tier-level-title:#101828;
+ --tier-level-bodycontents:#CECFD2;
+  --restatement-title:#F5F5F6;
+  --restatement-border-bottom:#1F242F;
+  --restatement-base-title:#F5F5F6;
+    --restatement-background-table:#0C111D;
+    --restatement-background-title-table:#161B26;
+     --restatement-pdf-title:#F5F5F6;
+       --restatement-datas:#F5F5F6;
+       --restatement-border:#1F242F;
+       --restatement-hover:#1F242F;
+        --restatement-input-bg:#0C111D;
+        --restatement-input-border: #333741;
+        --audit-title:#F5F5F6;
+          --audit-filters-data:#94969C;
+          --audit-border:#1F242F;
+           --audit-btngroup:#0C111D;
+           --audit-btn-active:#1F242F;
+           --audit-btn-font:#CECFD2;
+           --audit-normal-font:#CECFD2;
+             --audit-search-input:#0C111D;
+             --audit-seach-color:#85888E;
+             --off-canves-icm-bg: #101828;
+  --sec-list-layout-bg:#161b26;
+  --sec-list-layout-txt-colour:#ECECED;
+  --layou-header-txt-colour:#F5F5F6;
+--change-history-h3-headeer:#F5F5F6;
+--clauses-added-header-color:#F5F5F6;
+--clr-btn-chnge-page-btm-bg-colour:#161B26;
+--clr-btn-chnge-page-btm-txt-colour:#CECFD2;
+--contract-list-table-color:#F5F5F6;
 
 }
 
