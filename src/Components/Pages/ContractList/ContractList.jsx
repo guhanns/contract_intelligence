@@ -85,7 +85,7 @@ function ContractList() {
                 <span class="custom-checkbox"></span>
               </label>
               <div className="doc-name-id">
-                <h5 className="name">PBM_Contract_Amgen_2025_Q1_v1.0.pdf 020202020202020202020202020202020202</h5>
+                <h5 className="name">PBM_Contract_Amgen_2025_Q1_v1.0.pdf</h5>
                 <h5 className="id">SM125678</h5>
               </div>
             </div>
@@ -95,7 +95,7 @@ function ContractList() {
                 <span class="custom-checkbox"></span>
               </label>
               <div className="doc-name-id">
-                <h5 className="name">PBM_Contract_Amgen_2025_Q1_v1.0.pdf 282828282828282828282828282828282828</h5>
+                <h5 className="name">PBM_Contract_Amgen_2025_Q1_v1.0.pdf</h5>
                 <h5 className="id">SM125678</h5>
               </div>
             </div>
