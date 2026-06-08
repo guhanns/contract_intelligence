@@ -31,13 +31,14 @@ function Topbar() {
   const [active, setActive] = useState(theme === "Light" ? "Light" : "Dark");
 
   const handleLogout = () => {
-    instance.logoutRedirect({
-      postLogoutRedirectUri: "https://app.intellicontract.ai.srm-tech.com/", // 🔁 Back to login page or home
-    });
-    const username = accounts[0]?.name;
-    if (username) {
-      dispatch(logUserLogout(username));
-    }
+    // instance.logoutRedirect({
+    //   postLogoutRedirectUri: "https://app.intellicontract.ai.srm-tech.com/", // 🔁 Back to login page or home
+    // });
+    // const username = accounts[0]?.name;
+    // if (username) {
+    //   dispatch(logUserLogout(username));
+    // }
+    navigate('/')
   };
 
   return (

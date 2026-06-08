@@ -20,6 +20,8 @@ import ContractListNew from "./Components/Pages/ContractList/ContractListNew";
 import Comparison from "./Components/Pages/Comparison/Comparison";
 import AuditLog from "./Components/Pages/AuditLog/AuditLog";
 import Restatement from "./Components/Pages/Restatement/Restatement";
+import Branches from "./Components/Pages/Restatement/Branches";
+import { Outlet } from "react-router-dom";
 
 const dashboardRoutes = [
   {
@@ -227,9 +229,11 @@ const AuditRouters = [
 ]
 
 const RestatementRouter = [
- { 
-  path: "/restatement",
-  handle: {
+  {
+    path: "/restatement",
+    element: <Outlet />, // IMPORTANT
+
+    handle: {
       crumb: () => (
         <NavLink to="/restatement" className="breadcrumb-link">
           Restatement
@@ -237,15 +241,32 @@ const RestatementRouter = [
       ),
       activeMenuId: "restatement",
     },
-  children: [
+
+    children: [
       {
         index: true,
-        element: <Restatement/>,
+        element: <Restatement />,
+      },
+
+      {
+        path: "branches",
+        element: <Branches />,
+        handle: {
+          crumb: () => (
+            <NavLink
+              to="/restatement/branches"
+              className="breadcrumb-link"
+            >
+              Branches
+            </NavLink>
+          ),
+        },
       },
     ],
   },
-  
-]
+];
+
+
 
 export const router = createBrowserRouter(
   [

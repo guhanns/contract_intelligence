@@ -87,17 +87,17 @@ export const SidebarData =[
         link: '/audit',
         bgShade: 'linear-gradient(to right,rgb(0, 137, 249),rgb(0, 55, 255))',
       },
-      // {
-      //  navItem: '',
-      //   id: 'restatement',
-      //   // show: false,
-      //   img: gitflow,
-      //   imgLight: gitflowlight,
-      //   imgSelected:gitflownormal ,
-      //   imgLightSelected: gitflowselectdark ,
-      //   link: '/restatement',
-      //   bgShade: 'linear-gradient(to right,rgb(0, 137, 249),rgb(0, 55, 255))',
-      // }
+      {
+       navItem: '',
+        id: 'restatement',
+        // show: false,
+        img: gitflow,
+        imgLight: gitflowlight,
+        imgSelected:gitflownormal ,
+        imgLightSelected: gitflowselectdark ,
+        link: '/restatement',
+        bgShade: 'linear-gradient(to right,rgb(0, 137, 249),rgb(0, 55, 255))',
+      }
       
      
 ]
